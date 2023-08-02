@@ -1,12 +1,18 @@
-// S for serabi or struct validator
+// Go struct validator
 package serabi
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/url"
 	"reflect"
+	"strconv"
 	"strings"
+	"time"
 
 	te "github.com/karincake/tempe/error"
+	"gorm.io/datatypes"
 )
 
 // just key val for the tag
@@ -151,6 +157,195 @@ func CheckParsedTag(parsedTag []keyVal, fv reflect.Value, el te.Errors, key stri
 			}
 		}
 	}
+}
+
+// Validation from IO Reader
+func ValidateIoReader(container interface{}, input io.Reader) te.Errors {
+	decoder := json.NewDecoder(input)
+	err := decoder.Decode(&container)
+	if err != nil {
+		cV := reflect.ValueOf(container)
+		for cV.Kind() == reflect.Pointer || cV.Kind() == reflect.Interface {
+			cV = cV.Elem()
+		}
+		structName := cV.Type().Name()
+		return te.NewCompleteErrors("struct", "request-bad", fmt.Sprintf(ErrMessage["parsing-fail"], structName, err), fmt.Sprintf("value of %v", structName), "")
+	}
+
+	// same process with normal validation
+	return Validate(container)
+}
+
+// Validation from url
+// caveat: url's structure makes it impossible to do deep parsing
+func ValidateURL(container any, url url.URL) te.Errors {
+	cV := reflect.ValueOf(container).Elem()
+	for cV.Kind() == reflect.Pointer || cV.Kind() == reflect.Interface {
+		cV = cV.Elem()
+	}
+
+	cT := cV.Type()
+	values := url.Query()
+	errList := te.NewErrors()
+	for i := 0; i < cV.NumField(); i++ {
+		fieldV := cV.Field(i)
+		fieldT := cT.Field(i)
+
+		if !fieldV.CanSet() {
+			continue
+		}
+
+		key := fieldT.Tag.Get("json")
+		if key == "" {
+			key = fieldT.Name
+		}
+
+		vals, ok := values[key]
+		if !ok {
+			continue
+		}
+
+		switch fieldV.Interface().(type) {
+		case bool, *bool:
+			var v bool
+			if strings.ToLower(vals[0]) == "true" || vals[0] == "1" {
+				v = true
+			} else {
+				v = false
+			}
+			if fieldV.Kind() == reflect.Ptr {
+				fieldV.Set(reflect.ValueOf(&v))
+			} else {
+				fieldV.Set(reflect.ValueOf(v))
+			}
+		case string, *string:
+			if fieldV.Kind() == reflect.Ptr {
+				fieldV.Set(reflect.ValueOf(&vals[0]))
+			} else {
+				fieldV.Set(reflect.ValueOf(vals[0]))
+			}
+		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, *int, *int8, *int16, *int32, *int64, *uint, *uint8, *uint16, *uint32, *uint64:
+			if valInt, err := strconv.Atoi(vals[0]); err != nil {
+				errList.AddComplete(key, key, err.Error(), vals[0], fieldV.Interface())
+				// errList[key] = t.Error{Message: err.Error(), Code: key, ExptdValue: vals[0], GivenValue: fieldV.Interface()}
+			} else {
+				v := autoCastInt(valInt, fieldV)
+				fieldV.Set(v)
+			}
+		case float64, *float64:
+			strFloat, err := strconv.ParseFloat(vals[0], 64)
+			if err != nil {
+				// errList[key] = t.Error{Message: err.Error(), Code: key, ExptdValue: vals[0], GivenValue: fieldV.Interface()}
+				errList.AddComplete(key, key, err.Error(), vals[0], fieldV.Interface())
+			}
+			if fieldV.Kind() == reflect.Ptr {
+				fieldV.Set(reflect.ValueOf(&strFloat))
+			} else {
+				fieldV.Set(reflect.ValueOf(strFloat))
+			}
+		case float32, *float32:
+			strFloat, err := strconv.ParseFloat(vals[0], 32)
+			if err != nil {
+				// errList[key] = t.Error{Message: err.Error(), Code: key, ExptdValue: vals[0], GivenValue: fieldV.Interface()}
+				errList.AddComplete(key, key, err.Error(), vals[0], fieldV.Interface())
+			}
+			strFloat32 := float32(strFloat)
+			if fieldV.Kind() == reflect.Ptr {
+				fieldV.Set(reflect.ValueOf(&strFloat32))
+			} else {
+				fieldV.Set(reflect.ValueOf(strFloat32))
+			}
+		case []string, *[]string:
+			fieldV.Set(reflect.ValueOf(&vals))
+		case datatypes.Date, *datatypes.Date:
+			time, err := time.Parse("2006-01-02T15:04:05.000Z", vals[0])
+			if err != nil {
+				// errList[key] = t.Error{Message: err.Error(), Code: key, ExptdValue: vals[0], GivenValue: fieldV.Interface()}
+				errList.AddComplete(key, key, err.Error(), vals[0], fieldV.Interface())
+			}
+			date := datatypes.Date(time)
+			if fieldV.Kind() == reflect.Ptr {
+				fieldV.Set(reflect.ValueOf(&date))
+			} else {
+				fieldV.Set(reflect.ValueOf(date))
+			}
+		case time.Time, *time.Time:
+			time, err := time.Parse("2006-01-02T15:04:05.000Z", vals[0])
+			if err != nil {
+				// errList[key] = t.Error{Message: err.Error(), Code: key, ExptdValue: vals[0], GivenValue: fieldV.Interface()}
+				errList.AddComplete(key, key, err.Error(), vals[0], fieldV.Interface())
+			}
+			if fieldV.Kind() == reflect.Ptr {
+				fieldV.Set(reflect.ValueOf(&time))
+			} else {
+				fieldV.Set(reflect.ValueOf(time))
+			}
+		// TODO: make any *[]int as a function
+		case *[]int8:
+			failed := false
+			valX := []int8{}
+			for _, val := range vals {
+				if valInt, err := strconv.Atoi(val); err != nil {
+					failed = true
+					// errList[key] = t.Error{Message: err.Error(), Code: key, ExptdValue: val, GivenValue: fieldV.Interface()}
+					errList.AddComplete(key, key, err.Error(), val, fieldV.Interface())
+				} else {
+					valX = append(valX, int8(valInt))
+				}
+			}
+			if !failed {
+				fieldV.Set(reflect.ValueOf(valX))
+			}
+			// case []int16:
+			// 	failed := false
+			// 	valX := []int16{}
+			// 	for _, val := range vals {
+			// 		if valInt, err := strconv.Atoi(val); err != nil {
+			// 			failed = true
+			// 			errList[key] = t.Error{err.Error(), key, val, fieldV.Interface()}
+			// 		} else {
+			// 			valX = append(valX, int16(valInt))
+			// 		}
+			// 	}
+			// 	if !failed {
+			// 		fieldV.Set(reflect.ValueOf(valX))
+			// 	}
+			// case []int32:
+			// 	failed := false
+			// 	valX := []int32{}
+			// 	for _, val := range vals {
+			// 		if valInt, err := strconv.Atoi(val); err != nil {
+			// 			failed = true
+			// 			errList[key] = t.Error{err.Error(), key, val, fieldV.Interface()}
+			// 		} else {
+			// 			valX = append(valX, int32(valInt))
+			// 		}
+			// 	}
+			// 	if !failed {
+			// 		fieldV.Set(reflect.ValueOf(valX))
+			// 	}
+			// case []int64:
+			// 	failed := false
+			// 	valX := []int64{}
+			// 	for _, val := range vals {
+			// 		if valInt, err := strconv.Atoi(val); err != nil {
+			// 			failed = true
+			// 			errList[key] = t.Error{err.Error(), key, val, fieldV.Interface()}
+			// 		} else {
+			// 			valX = append(valX, int64(valInt))
+			// 		}
+			// 	}
+			// 	if !failed {
+			// 		fieldV.Set(reflect.ValueOf(valX))
+			// 	}
+		}
+	}
+
+	if len(errList) > 0 {
+		return errList
+	}
+
+	return Validate(container)
 }
 
 // register a validator
