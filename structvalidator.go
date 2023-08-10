@@ -85,6 +85,7 @@ func Validate(input interface{}, nameSpaces ...string) te.Errors {
 			if tag == "" {
 				tag = fieldT.Name
 			}
+
 			errList.Import(Validate(fieldV.Interface(), tag, embeddedMode).Get())
 			continue
 		}
