@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"regexp"
 	"strconv"
+
+	"github.com/google/uuid"
 )
 
 // register the field checkers
@@ -23,9 +25,10 @@ func init() {
 	RegisterFieldChecker("alphaSpace", alphabetSTagValidator)
 	RegisterFieldChecker("alphaNumeric", alphaNumericTagValidator)
 	RegisterFieldChecker("alphaNumericU", alphaNumericUTagValidator)
-	RegisterFieldChecker("validemail", validEmailTagValidator)
+	RegisterFieldChecker("email", emailTagValidator)
 	RegisterFieldChecker("base64", base64TagValidator)
 	RegisterFieldChecker("b64size", b64SizeKbTagValidator)
+	RegisterFieldChecker("uuid", uuidTagValidator)
 }
 
 ///// Field checkers
@@ -158,7 +161,7 @@ func alphaNumericUTagValidator(val reflect.Value, opts ...string) error {
 	return nil
 }
 
-func validEmailTagValidator(val reflect.Value, opts ...string) error {
+func emailTagValidator(val reflect.Value, opts ...string) error {
 	if (val.Kind() == reflect.Pointer && val.IsNil()) || val.String() == "" {
 		return nil
 	}
@@ -225,6 +228,19 @@ func b64SizeKbTagValidator(val reflect.Value, opts ...string) error {
 	// if bytes size > max bytes allowed then
 	if (l*3-eq)/4 > opts0Int*1000 {
 		return fmt.Errorf(ErrMessage["fileSizeBase64"], opts0Int)
+	}
+
+	return nil
+}
+
+func uuidTagValidator(val reflect.Value, opts ...string) error {
+	if (val.Kind() == reflect.Pointer && val.IsNil()) || val.String() == "" {
+		return nil
+	}
+
+	_, err := uuid.Parse(valStringer(val))
+	if err != nil {
+		return errors.New(ErrMessage["numeric"])
 	}
 
 	return nil

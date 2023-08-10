@@ -86,7 +86,6 @@ func Validate(input interface{}, nameSpaces ...string) te.Errors {
 				tag = fieldT.Name
 			}
 			errList.Import(Validate(fieldV.Interface(), tag, embeddedMode).Get())
-			// maps.Copy(errList, Validate(fieldV.Interface(), tag, embeddedMode))
 			continue
 		}
 
@@ -117,7 +116,6 @@ func Validate(input interface{}, nameSpaces ...string) te.Errors {
 				// empty array
 				if fieldV.Len() == 0 {
 					if required {
-						// errList[nameSpace+key] = te.Error{Message: ErrMessage["required"], Code: "required", ExptdValue: "", GivenValue: fieldV.Interface()}
 						errList[nameSpace+key] = te.NewError("required", ErrMessage["required"], "", fieldV.Interface().(string))
 					}
 					continue
@@ -126,7 +124,6 @@ func Validate(input interface{}, nameSpaces ...string) te.Errors {
 				if fieldV.Index(0).Kind() == reflect.Struct {
 					for ix := 0; ix < fieldV.Len(); ix++ {
 						errList.Import(Validate(fieldV.Index(ix).Interface(), fmt.Sprintf("%v[%v]", key, ix)).Get())
-						// maps.Copy(errList, Validate(fieldV.Index(ix).Interface(), fmt.Sprintf("%v[%v]", key, ix)))
 					}
 				} else {
 					for ix := 0; ix < fieldV.Len(); ix++ {
@@ -152,7 +149,6 @@ func CheckParsedTag(parsedTag []keyVal, fv reflect.Value, el te.Errors, key stri
 			err := tagValidator[kv.Key](fv, kv.Val)
 			if err != nil {
 				el.AddComplete(key, kv.Key, err.Error(), kv.Val, fv.Interface())
-				// el[key] = te.Error{Message: err.Error(), Code: kv.Key, ExptdValue: kv.Val, GivenValue: fv.Interface()}
 				break // 1 err is enough, break from error check of the current field
 			}
 		}
@@ -169,7 +165,7 @@ func ValidateIoReader(container interface{}, input io.Reader) te.Errors {
 			cV = cV.Elem()
 		}
 		structName := cV.Type().Name()
-		return te.NewCompleteErrors("struct", "request-bad", fmt.Sprintf(ErrMessage["parsing-fail"], structName, err), fmt.Sprintf("value of %v", structName), "")
+		return te.NewCompleteErrors("payload-bad", "payload-bad", fmt.Sprintf(ErrMessage["parsing-fail"], structName, err), fmt.Sprintf("value of %v", structName), "")
 	}
 
 	// same process with normal validation
@@ -227,7 +223,6 @@ func ValidateURL(container any, url url.URL) te.Errors {
 		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, *int, *int8, *int16, *int32, *int64, *uint, *uint8, *uint16, *uint32, *uint64:
 			if valInt, err := strconv.Atoi(vals[0]); err != nil {
 				errList.AddComplete(key, key, err.Error(), vals[0], fieldV.Interface())
-				// errList[key] = t.Error{Message: err.Error(), Code: key, ExptdValue: vals[0], GivenValue: fieldV.Interface()}
 			} else {
 				v := autoCastInt(valInt, fieldV)
 				fieldV.Set(v)
@@ -235,7 +230,6 @@ func ValidateURL(container any, url url.URL) te.Errors {
 		case float64, *float64:
 			strFloat, err := strconv.ParseFloat(vals[0], 64)
 			if err != nil {
-				// errList[key] = t.Error{Message: err.Error(), Code: key, ExptdValue: vals[0], GivenValue: fieldV.Interface()}
 				errList.AddComplete(key, key, err.Error(), vals[0], fieldV.Interface())
 			}
 			if fieldV.Kind() == reflect.Ptr {
@@ -246,7 +240,6 @@ func ValidateURL(container any, url url.URL) te.Errors {
 		case float32, *float32:
 			strFloat, err := strconv.ParseFloat(vals[0], 32)
 			if err != nil {
-				// errList[key] = t.Error{Message: err.Error(), Code: key, ExptdValue: vals[0], GivenValue: fieldV.Interface()}
 				errList.AddComplete(key, key, err.Error(), vals[0], fieldV.Interface())
 			}
 			strFloat32 := float32(strFloat)
@@ -260,7 +253,6 @@ func ValidateURL(container any, url url.URL) te.Errors {
 		case datatypes.Date, *datatypes.Date:
 			time, err := time.Parse("2006-01-02T15:04:05.000Z", vals[0])
 			if err != nil {
-				// errList[key] = t.Error{Message: err.Error(), Code: key, ExptdValue: vals[0], GivenValue: fieldV.Interface()}
 				errList.AddComplete(key, key, err.Error(), vals[0], fieldV.Interface())
 			}
 			date := datatypes.Date(time)
@@ -272,7 +264,6 @@ func ValidateURL(container any, url url.URL) te.Errors {
 		case time.Time, *time.Time:
 			time, err := time.Parse("2006-01-02T15:04:05.000Z", vals[0])
 			if err != nil {
-				// errList[key] = t.Error{Message: err.Error(), Code: key, ExptdValue: vals[0], GivenValue: fieldV.Interface()}
 				errList.AddComplete(key, key, err.Error(), vals[0], fieldV.Interface())
 			}
 			if fieldV.Kind() == reflect.Ptr {
@@ -287,7 +278,6 @@ func ValidateURL(container any, url url.URL) te.Errors {
 			for _, val := range vals {
 				if valInt, err := strconv.Atoi(val); err != nil {
 					failed = true
-					// errList[key] = t.Error{Message: err.Error(), Code: key, ExptdValue: val, GivenValue: fieldV.Interface()}
 					errList.AddComplete(key, key, err.Error(), val, fieldV.Interface())
 				} else {
 					valX = append(valX, int8(valInt))
