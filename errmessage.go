@@ -18,4 +18,5 @@ func init() {
 	ErrMessage["email"] = "value must be an valid email addres format"
 	ErrMessage["base64"] = "value must be in base64 format"
 	ErrMessage["fileSizeBase64"] = "file size must be less than %d KB"
+	ErrMessage["uuid"] = "value must be a valid uuid"
 }
