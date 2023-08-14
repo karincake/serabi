@@ -5,7 +5,21 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	te "github.com/karincake/tempe/error"
 )
+
+func checkParsedTag(parsedTag []keyVal, fv reflect.Value, el te.Errors, key string) {
+	for _, kv := range parsedTag {
+		if _, ok := tagValidator[kv.Key]; ok {
+			err := tagValidator[kv.Key](fv, kv.Val)
+			if err != nil {
+				el.AddComplete(key, kv.Key, err.Error(), kv.Val, fv.Interface())
+				break // 1 err is enough, break from error check of the current field
+			}
+		}
+	}
+}
 
 // parse tag for key - val
 func parseTag(tag string) []keyVal {

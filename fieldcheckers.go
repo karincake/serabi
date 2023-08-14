@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -123,7 +124,8 @@ func alphabetTagValidator(val reflect.Value, opts ...string) error {
 }
 
 func alphabetSTagValidator(val reflect.Value, opts ...string) error {
-	if (val.Kind() == reflect.Pointer && val.IsNil()) || val.String() == "" {
+	stringVal := strings.TrimSpace(val.String())
+	if (val.Kind() == reflect.Pointer && val.IsNil()) || stringVal == "" {
 		return nil
 	}
 	re := regexp.MustCompile("^[ a-zA-Z]+$")

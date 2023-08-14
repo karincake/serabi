@@ -128,12 +128,12 @@ func Validate(input interface{}, nameSpaces ...string) te.Errors {
 					}
 				} else {
 					for ix := 0; ix < fieldV.Len(); ix++ {
-						CheckParsedTag(parsedTag, fieldV.Index(ix), errList, fmt.Sprintf("%v[%v]", key, ix))
+						checkParsedTag(parsedTag, fieldV.Index(ix), errList, fmt.Sprintf("%v[%v]", key, ix))
 					}
 				}
 			} else {
 				// non slice
-				CheckParsedTag(parsedTag, fieldV, errList, nameSpace+key)
+				checkParsedTag(parsedTag, fieldV, errList, nameSpace+key)
 			}
 		}
 	}
@@ -142,18 +142,6 @@ func Validate(input interface{}, nameSpaces ...string) te.Errors {
 		return errList
 	}
 	return nil
-}
-
-func CheckParsedTag(parsedTag []keyVal, fv reflect.Value, el te.Errors, key string) {
-	for _, kv := range parsedTag {
-		if _, ok := tagValidator[kv.Key]; ok {
-			err := tagValidator[kv.Key](fv, kv.Val)
-			if err != nil {
-				el.AddComplete(key, kv.Key, err.Error(), kv.Val, fv.Interface())
-				break // 1 err is enough, break from error check of the current field
-			}
-		}
-	}
 }
 
 // Validation from IO Reader
