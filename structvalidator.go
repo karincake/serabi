@@ -82,9 +82,11 @@ func Validate(input interface{}, nameSpaces ...string) te.Errors {
 				embeddedMode = "(embedded)"
 			}
 			tag := fieldT.Tag.Get("json")
-			if tag == "" {
+			tags := strings.Split(tag, ",")
+			if tags[0] == "" {
 				tag = fieldT.Name
 			}
+			tag = tags[0]
 
 			errList.Import(Validate(fieldV.Interface(), tag, embeddedMode).Get())
 			continue
