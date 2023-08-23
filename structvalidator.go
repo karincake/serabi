@@ -215,8 +215,7 @@ func ValidateURL(container any, url url.URL) te.Errors {
 			if valInt, err := strconv.Atoi(vals[0]); err != nil {
 				errList.AddComplete(key, key, err.Error(), vals[0], fieldV.Interface())
 			} else {
-				v := autoCastInt(valInt, fieldV)
-				fieldV.Set(v)
+				fieldV.Set(intToRefValue(valInt, fieldV))
 			}
 		case float64, *float64:
 			strFloat, err := strconv.ParseFloat(vals[0], 64)
@@ -329,12 +328,12 @@ func ValidateURL(container any, url url.URL) te.Errors {
 	return Validate(container)
 }
 
-// register a validator
+// Register a tag validator
 func RegisterFieldChecker(tag string, validatorF validator) {
 	tagValidator[tag] = validatorF
 }
 
-// unregister a validator
+// Unregister a tag validator
 func UnregisterFieldChecker(tag string) {
 	delete(tagValidator, tag)
 }

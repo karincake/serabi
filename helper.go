@@ -39,8 +39,8 @@ func parseTag(tag string) []keyVal {
 	return kvList
 }
 
-// autocast intype, beware as it returns 0 for the default value
-func autoCastInt(input int, kind reflect.Value) reflect.Value {
+// beware as it returns 0 for the default value
+func intToRefValue(input int, kind reflect.Value) reflect.Value {
 	switch kind.Interface().(type) {
 	case int:
 		return reflect.ValueOf(input)

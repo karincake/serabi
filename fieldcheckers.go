@@ -35,7 +35,14 @@ func init() {
 ///// Field checkers
 
 func requiredTagValidator(val reflect.Value, opts ...string) error {
-	if (val.Kind() == reflect.String && val.String() == "") || (val.Kind() == reflect.Ptr && val.IsNil()) {
+	kind := val.Kind()
+	if (kind == reflect.String && val.String() == "") || (kind == reflect.Ptr && val.IsNil()) {
+		return errors.New(ErrMessage["required"])
+	} else if kind >= reflect.Int && kind <= reflect.Int64 && opts[0] != "allowzero" && val.Int() == 0 {
+		return errors.New(ErrMessage["required"])
+	} else if kind >= reflect.Uint && kind <= reflect.Uint64 && opts[0] != "allowzero" && val.Uint() == 0 {
+		return errors.New(ErrMessage["required"])
+	} else if kind >= reflect.Float32 && kind <= reflect.Float64 && opts[0] != "allowzero" && val.Float() == 0 {
 		return errors.New(ErrMessage["required"])
 	}
 	return nil
@@ -260,7 +267,7 @@ func valLimiter(val reflect.Value, exptVal string, mode string) error {
 	if valK == reflect.String {
 		valCT, err := strconv.ParseFloat(val.String(), 64)
 		if err != nil {
-			return errors.New("nilai harus berupa angka/numerik")
+			return errors.New(ErrMessage["numeric"])
 		}
 		valC = valCT
 	} else if valK >= reflect.Int && valK <= reflect.Int64 {
