@@ -1,24 +1,17 @@
 package serabi
 
 import (
-	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 
+	h "github.com/karincake/serabi/helper"
 	te "github.com/karincake/tempe/error"
 )
 
-func checkParsedTag(parsedTag []keyVal, fv reflect.Value, el te.Errors, key string) {
-	for _, kv := range parsedTag {
-		if _, ok := tagValidator[kv.Key]; ok {
-			err := tagValidator[kv.Key](fv, kv.Val)
-			if err != nil {
-				el.AddComplete(key, kv.Key, err.Error(), kv.Val, fv.Interface())
-				break // 1 err is enough, break from error check of the current field
-			}
-		}
-	}
+// just key val for the tag
+type keyVal struct {
+	Key string
+	Val string
 }
 
 // parse tag for key - val
@@ -39,78 +32,30 @@ func parseTag(tag string) []keyVal {
 	return kvList
 }
 
-// autocast intype, beware as it returns 0 for the default value
-func autoCastInt(input int, kind reflect.Value) reflect.Value {
-	switch kind.Interface().(type) {
-	case int:
-		return reflect.ValueOf(input)
-	case int8:
-		return reflect.ValueOf(int8(input))
-	case int16:
-		return reflect.ValueOf(int16(input))
-	case int32:
-		return reflect.ValueOf(int32(input))
-	case int64:
-		return reflect.ValueOf(int64(input))
-	case uint:
-		return reflect.ValueOf(uint(input))
-	case uint8:
-		return reflect.ValueOf(uint8(input))
-	case uint16:
-		return reflect.ValueOf(uint16(input))
-	case uint32:
-		return reflect.ValueOf(uint32(input))
-	case uint64:
-		return reflect.ValueOf(uint64(input))
-	case *int:
-		x := input
-		return reflect.ValueOf(&x)
-	case *int8:
-		x := int8(input)
-		return reflect.ValueOf(&x)
-	case *int16:
-		x := int16(input)
-		return reflect.ValueOf(&x)
-	case *int32:
-		x := int32(input)
-		return reflect.ValueOf(&x)
-	case *int64:
-		x := int64(input)
-		return reflect.ValueOf(&x)
-	case *uint:
-		x := uint(input)
-		return reflect.ValueOf(&x)
-	case *uint8:
-		x := uint8(input)
-		return reflect.ValueOf(&x)
-	case *uint16:
-		x := uint16(input)
-		return reflect.ValueOf(&x)
-	case *uint32:
-		x := uint32(input)
-		return reflect.ValueOf(&x)
-	case *uint64:
-		x := uint64(input)
-		return reflect.ValueOf(&x)
-	}
-	return reflect.ValueOf(0)
-}
-
-func valStringer(val reflect.Value) string {
-	valK := val.Kind()
-	var valC string
-	if valK == reflect.String {
-		valC = val.String()
-	} else if valK >= reflect.Int && valK < reflect.Uint64 {
-		tmp := 0
-		if valK >= reflect.Uint {
-			tmp = int(val.Uint())
-		} else {
-			tmp = int(val.Int())
+// parse tag using fvFunc
+func checkParsedTag(parent *reflect.Value, parsedTag []keyVal, fv reflect.Value, el te.Errors, key string) {
+	for _, kv := range parsedTag {
+		if _, ok := tagFVs[kv.Key]; ok {
+			localFvType := tagFVs[kv.Key].fvType
+			if localFvType == FVTBasic {
+				err := tagFVs[kv.Key].fvFunc(fv, kv.Val)
+				if err != nil {
+					el.AddComplete(key, kv.Key, err.Error(), kv.Val, fv.Interface())
+					break
+				}
+			} else if localFvType == FVTField {
+				err := tagFVs[kv.Key].fvFunc(fv, h.ValStringer(parent.FieldByName(kv.Val)))
+				if err != nil {
+					el.AddComplete(key, kv.Key, err.Error(), kv.Val, fv.Interface())
+					break
+				}
+			} else if localFvType == FVTRegex {
+				err := tagFVs["regex"].fvFunc(fv, kv.Key)
+				if err != nil {
+					el.AddComplete(key, kv.Key, err.Error(), kv.Val, fv.Interface())
+					break
+				}
+			}
 		}
-		valC = strconv.Itoa(tmp)
-	} else if valK >= reflect.Float32 && valK < reflect.Float64 {
-		valC = fmt.Sprintf("%v", val.Float())
 	}
-	return valC
 }
