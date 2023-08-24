@@ -84,7 +84,6 @@ func Validate(input any, nameSpaces ...string) te.Errors {
 		}
 
 		// if current field is struct, validate again
-		// TODO: find information about this -> || fieldT.Type.Name() == ""
 		typeString := fieldT.Type.String()
 		if (fieldT.Type.Kind() == reflect.Struct) && typeString != "time.Time" {
 			embeddedMode := ""
@@ -339,22 +338,31 @@ func ValidateURL(container any, url url.URL) te.Errors {
 }
 
 // Add tag validator
+// Requires tag name and validation function for the parameters
 func AddTag(tag string, f fvFunc) {
 	tagFVs[tag] = fv{FVTBasic, f}
 }
 
-// Add tag validator
+// Add tag validator for field comparison
+// Field comparison validator is the same with basic valicator, except it uses
+// tag value as target field to be compared. Therefore, it can utilize the
+// existing function. Please note the difference is in its usage
+// i.e: gtField=age, gtField is the tag, age is the target field
 func AddTagForField(tag string, f fvFunc) {
 	tagFVs[tag] = fv{FVTField, f}
 }
 
 // Add a tag validator for regex
-func AddTagForRegex(tag string, rString string) {
+// Regex validator requires tag, regex, and message for the parameters
+// Note: the message is stated here since it utilizes single function for all
+// of the validation.
+func AddTagForRegex(tag string, r string, msg string) {
 	tagFVs[tag] = fv{FVTRegex, regexTagValidator}
-	regexes[tag] = regexp.MustCompile(rString)
+	regexes[tag] = regexp.MustCompile(r)
+	ErrMessage[tag] = msg
 }
 
-// Unregister a tag validator
+// Remove a tag validator
 func RemoveTag(tag string) {
 	// forbidden tag to remove
 	if tag == "regex" {
