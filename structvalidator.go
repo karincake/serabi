@@ -27,13 +27,13 @@ type fv struct {
 }
 
 const (
-	FVTBasic           fvType = "func"
-	FVTRegex           fvType = "regex"
-	FVTFieldComparison fvType = "fieldCompare"
+	FVTBasic fvType = "func"
+	FVTRegex fvType = "regex"
+	FVTField fvType = "fieldCompare"
 )
 
 // list of validator for the given key from tag
-var tagFVs map[string]fv
+var tagFVs map[string]fv = map[string]fv{}
 
 // special case, regex and field comparison
 // var tagRegexes map[string]string
@@ -44,7 +44,7 @@ var fields map[string]string = map[string]string{}
 const tagName = "validate"
 
 // Validation of each field based on the registered field checkers
-func Validate(input interface{}, nameSpaces ...string) te.Errors {
+func Validate(input any, nameSpaces ...string) te.Errors {
 	// identiy value and loop if its pointer until reaches non pointer
 	inputV := reflect.ValueOf(input)
 
@@ -345,13 +345,13 @@ func AddTag(tag string, f fvFunc) {
 
 // Add tag validator
 func AddTagForField(tag string, f fvFunc) {
-	tagFVs[tag] = fv{FVTFieldComparison, f}
+	tagFVs[tag] = fv{FVTField, f}
 }
 
 // Add a tag validator for regex
-func AddTagForRegex(tag string, regex string) {
+func AddTagForRegex(tag string, rString string) {
 	tagFVs[tag] = fv{FVTRegex, regexTagValidator}
-	regexes[tag] = regexp.MustCompile(regex)
+	regexes[tag] = regexp.MustCompile(rString)
 }
 
 // Unregister a tag validator

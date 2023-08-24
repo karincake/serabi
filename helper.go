@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"strings"
 
+	h "github.com/karincake/serabi/helper"
 	te "github.com/karincake/tempe/error"
 )
 
@@ -42,14 +43,14 @@ func checkParsedTag(parent *reflect.Value, parsedTag []keyVal, fv reflect.Value,
 					el.AddComplete(key, kv.Key, err.Error(), kv.Val, fv.Interface())
 					break
 				}
-			} else if localFvType == FVTFieldComparison {
-				err := tagFVs[kv.Key].fvFunc(fv, parent.FieldByName(kv.Val).String())
+			} else if localFvType == FVTField {
+				err := tagFVs[kv.Key].fvFunc(fv, h.ValStringer(parent.FieldByName(kv.Val)))
 				if err != nil {
 					el.AddComplete(key, kv.Key, err.Error(), kv.Val, fv.Interface())
 					break
 				}
 			} else if localFvType == FVTRegex {
-				err := tagFVs["regex"].fvFunc(fv, parent.FieldByName(kv.Val).String())
+				err := tagFVs["regex"].fvFunc(fv, kv.Key)
 				if err != nil {
 					el.AddComplete(key, kv.Key, err.Error(), kv.Val, fv.Interface())
 					break
