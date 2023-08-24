@@ -7,28 +7,38 @@ import (
 	"io"
 	"net/url"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	h "github.com/karincake/serabi/helper"
 	te "github.com/karincake/tempe/error"
 	"gorm.io/datatypes"
 )
 
-// just key val for the tag
-type keyVal struct {
-	Key string
-	Val string
-}
-
 // viladator func interface?
 // param: reflect value, string
-type validator func(reflect.Value, ...string) error
+type fvType string
+type fvFunc func(reflect.Value, string) error
+type fv struct {
+	fvType
+	fvFunc
+}
 
-// type syncvalidator func(reflect.Value, string, reflect.Value, string) error
+const (
+	FVTBasic           fvType = "func"
+	FVTRegex           fvType = "regex"
+	FVTFieldComparison fvType = "fieldCompare"
+)
 
 // list of validator for the given key from tag
-var tagValidator map[string]validator
+var tagFVs map[string]fv
+
+// special case, regex and field comparison
+// var tagRegexes map[string]string
+var regexes map[string]*regexp.Regexp = map[string]*regexp.Regexp{}
+var fields map[string]string = map[string]string{}
 
 // tag name to validate
 const tagName = "validate"
@@ -130,12 +140,12 @@ func Validate(input interface{}, nameSpaces ...string) te.Errors {
 					}
 				} else {
 					for ix := 0; ix < fieldV.Len(); ix++ {
-						checkParsedTag(parsedTag, fieldV.Index(ix), errList, fmt.Sprintf("%v[%v]", key, ix))
+						checkParsedTag(&inputV, parsedTag, fieldV.Index(ix), errList, fmt.Sprintf("%v[%v]", key, ix))
 					}
 				}
 			} else {
 				// non slice
-				checkParsedTag(parsedTag, fieldV, errList, nameSpace+key)
+				checkParsedTag(&inputV, parsedTag, fieldV, errList, nameSpace+key)
 			}
 		}
 	}
@@ -215,7 +225,7 @@ func ValidateURL(container any, url url.URL) te.Errors {
 			if valInt, err := strconv.Atoi(vals[0]); err != nil {
 				errList.AddComplete(key, key, err.Error(), vals[0], fieldV.Interface())
 			} else {
-				fieldV.Set(intToRefValue(valInt, fieldV))
+				fieldV.Set(h.IntToVal(valInt, fieldV))
 			}
 		case float64, *float64:
 			strFloat, err := strconv.ParseFloat(vals[0], 64)
@@ -328,12 +338,27 @@ func ValidateURL(container any, url url.URL) te.Errors {
 	return Validate(container)
 }
 
-// Register a tag validator
-func RegisterFieldChecker(tag string, validatorF validator) {
-	tagValidator[tag] = validatorF
+// Add tag validator
+func AddTag(tag string, f fvFunc) {
+	tagFVs[tag] = fv{FVTBasic, f}
+}
+
+// Add tag validator
+func AddTagForField(tag string, f fvFunc) {
+	tagFVs[tag] = fv{FVTFieldComparison, f}
+}
+
+// Add a tag validator for regex
+func AddTagForRegex(tag string, regex string) {
+	tagFVs[tag] = fv{FVTRegex, regexTagValidator}
+	regexes[tag] = regexp.MustCompile(regex)
 }
 
 // Unregister a tag validator
-func UnregisterFieldChecker(tag string) {
-	delete(tagValidator, tag)
+func RemoveTag(tag string) {
+	// forbidden tag to remove
+	if tag == "regex" {
+		return
+	}
+	delete(tagFVs, tag)
 }
