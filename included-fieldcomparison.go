@@ -1,5 +1,6 @@
-// built-in field checker
 package serabi
+
+//  included default tag validation for field comparison validation
 
 // register the field checkers
 func init() {
