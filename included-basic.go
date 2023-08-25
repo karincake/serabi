@@ -1,5 +1,6 @@
-// built-in field checker
 package serabi
+
+// included default tag validation for basic validation
 
 import (
 	"errors"

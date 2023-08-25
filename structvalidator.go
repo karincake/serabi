@@ -43,7 +43,7 @@ var fields map[string]string = map[string]string{}
 // tag name to validate
 const tagName = "validate"
 
-// Validation of each field based on the registered field checkers
+// Validation of each field based on the registered tag
 func Validate(input any, nameSpaces ...string) te.Errors {
 	// identiy value and loop if its pointer until reaches non pointer
 	inputV := reflect.ValueOf(input)
@@ -155,7 +155,7 @@ func Validate(input any, nameSpaces ...string) te.Errors {
 	return nil
 }
 
-// Validation from IO Reader
+// Validation for IO Reader to help validate, for example, payload of http request
 func ValidateIoReader(container interface{}, input io.Reader) te.Errors {
 	decoder := json.NewDecoder(input)
 	err := decoder.Decode(&container)
@@ -172,7 +172,7 @@ func ValidateIoReader(container interface{}, input io.Reader) te.Errors {
 	return Validate(container)
 }
 
-// Validation from url
+// Validation for url
 // caveat: url's structure makes it impossible to do deep parsing
 func ValidateURL(container any, url url.URL) te.Errors {
 	cV := reflect.ValueOf(container).Elem()
