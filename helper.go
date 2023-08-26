@@ -32,25 +32,25 @@ func parseTag(tag string) []keyVal {
 	return kvList
 }
 
-// parse tag using fvFunc
+// parse tag using FvFunc
 func checkParsedTag(parent *reflect.Value, parsedTag []keyVal, fv reflect.Value, el te.Errors, key string) {
 	for _, kv := range parsedTag {
 		if _, ok := tagFVs[kv.Key]; ok {
 			localFvType := tagFVs[kv.Key].fvType
 			if localFvType == FVTBasic {
-				err := tagFVs[kv.Key].fvFunc(fv, kv.Val)
+				err := tagFVs[kv.Key].FvFunc(fv, kv.Val)
 				if err != nil {
 					el.AddComplete(key, kv.Key, err.Error(), kv.Val, fv.Interface())
 					break
 				}
 			} else if localFvType == FVTField {
-				err := tagFVs[kv.Key].fvFunc(fv, h.ValStringer(parent.FieldByName(kv.Val)))
+				err := tagFVs[kv.Key].FvFunc(fv, h.ValStringer(parent.FieldByName(kv.Val)))
 				if err != nil {
 					el.AddComplete(key, kv.Key, err.Error(), kv.Val, fv.Interface())
 					break
 				}
 			} else if localFvType == FVTRegex {
-				err := tagFVs["regex"].fvFunc(fv, kv.Key)
+				err := tagFVs["regex"].FvFunc(fv, kv.Key)
 				if err != nil {
 					el.AddComplete(key, kv.Key, err.Error(), kv.Val, fv.Interface())
 					break
