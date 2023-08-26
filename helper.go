@@ -52,7 +52,7 @@ func parseTag(tag string) []keyVal {
 	return kvList
 }
 
-// parse tag using fvFunc
+// parse tag using FvFunc
 func checkParsedTag(parent *reflect.Value, parsedTag []keyVal, fv reflect.Value, el te.XErrors, key string) {
 	for _, kv := range parsedTag {
 		kvKey := string(kv.Key)
@@ -60,19 +60,19 @@ func checkParsedTag(parent *reflect.Value, parsedTag []keyVal, fv reflect.Value,
 		if _, ok := tagFVs[kvKey]; ok {
 			localFvType := tagFVs[kvKey].fvType
 			if localFvType == FVTBasic {
-				err := tagFVs[kvKey].fvFunc(fv, kvVal)
+				err := tagFVs[kvKey].FvFunc(fv, kvVal)
 				if err != nil {
 					el[key] = te.XError{Code: kvKey, Message: err.Error(), ExpectedVal: kvVal, GivenVal: fv.Interface()}
 					break
 				}
 			} else if localFvType == FVTField {
-				err := tagFVs[kvKey].fvFunc(fv, h.ValStringer(parent.FieldByName(kvVal)))
+				err := tagFVs[kvKey].FvFunc(fv, h.ValStringer(parent.FieldByName(kvVal)))
 				if err != nil {
 					el[key] = te.XError{Code: kvKey, Message: err.Error(), ExpectedVal: kvVal, GivenVal: fv.Interface()}
 					break
 				}
 			} else if localFvType == FVTRegex {
-				err := tagFVs["regex"].fvFunc(fv, kvKey)
+				err := tagFVs["regex"].FvFunc(fv, kvKey)
 				if err != nil {
 					el[key] = te.XError{Code: kvKey, Message: err.Error(), ExpectedVal: kvVal, GivenVal: fv.Interface()}
 					break

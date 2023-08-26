@@ -21,10 +21,10 @@ import (
 // viladator func interface?
 // param: reflect value, string
 type fvType string
-type fvFunc func(reflect.Value, string) error
+type FvFunc func(reflect.Value, string) error
 type fv struct {
 	fvType
-	fvFunc
+	FvFunc
 }
 
 const (
@@ -349,7 +349,7 @@ func ValidateURL(container any, url url.URL) error {
 
 // Add tag validator
 // Requires tag name and validation function for the parameters
-func AddTag(tag string, f fvFunc) {
+func AddTag(tag string, f FvFunc) {
 	tagFVs[tag] = fv{FVTBasic, f}
 }
 
@@ -358,7 +358,7 @@ func AddTag(tag string, f fvFunc) {
 // tag value as target field to be compared. Therefore, it can utilize the
 // existing function. Please note the difference is in its usage
 // i.e: gtField=age, gtField is the tag, age is the target field
-func AddTagForField(tag string, f fvFunc) {
+func AddTagForField(tag string, f FvFunc) {
 	tagFVs[tag] = fv{FVTField, f}
 }
 
