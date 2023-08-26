@@ -2,7 +2,6 @@ package serabi
 
 import (
 	"reflect"
-	"strings"
 
 	h "github.com/karincake/serabi/helper"
 	te "github.com/karincake/tempe/error"
@@ -10,49 +9,72 @@ import (
 
 // just key val for the tag
 type keyVal struct {
-	Key string
-	Val string
+	Key []byte
+	Val []byte
 }
 
 // parse tag for key - val
 func parseTag(tag string) []keyVal {
 	kvList := []keyVal{}
-	for _, item := range strings.Split(tag, ";") {
-		pair := strings.SplitN(strings.TrimSpace(item), "=", 2)
-		if len(pair) == 0 {
-			continue
+	tagByte := []byte(tag)
+	lastI := 0
+	for i, v := range tagByte {
+		if v == 59 {
+			kvByte := tagByte[lastI:i]
+			lastI = i + 1
+			eqIdx := 0
+			for i2, v2 := range kvByte {
+				if v2 == 61 {
+					eqIdx = i2
+					break
+				}
+			}
+			if eqIdx > 0 {
+				kvList = append(kvList, keyVal{Key: kvByte[:eqIdx], Val: kvByte[eqIdx+1:]})
+			} else {
+				kvList = append(kvList, keyVal{Key: kvByte})
+			}
 		}
-		if len(pair) == 1 {
-			kvList = append(kvList, keyVal{pair[0], ""})
+	}
+	kvByte := tagByte[lastI:]
+	eqIdx := 0
+	for i2, v2 := range kvByte {
+		if v2 == 61 {
+			eqIdx = i2
+			break
 		}
-		if len(pair) == 2 {
-			kvList = append(kvList, keyVal{pair[0], pair[1]})
-		}
+	}
+	if eqIdx > 0 {
+		kvList = append(kvList, keyVal{Key: kvByte[:eqIdx], Val: kvByte[eqIdx+1:]})
+	} else {
+		kvList = append(kvList, keyVal{Key: kvByte})
 	}
 	return kvList
 }
 
 // parse tag using fvFunc
-func checkParsedTag(parent *reflect.Value, parsedTag []keyVal, fv reflect.Value, el te.Errors, key string) {
+func checkParsedTag(parent *reflect.Value, parsedTag []keyVal, fv reflect.Value, el te.XErrors, key string) {
 	for _, kv := range parsedTag {
-		if _, ok := tagFVs[kv.Key]; ok {
-			localFvType := tagFVs[kv.Key].fvType
+		kvKey := string(kv.Key)
+		kvVal := string(kv.Val)
+		if _, ok := tagFVs[kvKey]; ok {
+			localFvType := tagFVs[kvKey].fvType
 			if localFvType == FVTBasic {
-				err := tagFVs[kv.Key].fvFunc(fv, kv.Val)
+				err := tagFVs[kvKey].fvFunc(fv, kvVal)
 				if err != nil {
-					el.AddComplete(key, kv.Key, err.Error(), kv.Val, fv.Interface())
+					el[key] = te.XError{Code: kvKey, Message: err.Error(), ExpectedVal: kvVal, GivenVal: fv.Interface()}
 					break
 				}
 			} else if localFvType == FVTField {
-				err := tagFVs[kv.Key].fvFunc(fv, h.ValStringer(parent.FieldByName(kv.Val)))
+				err := tagFVs[kvKey].fvFunc(fv, h.ValStringer(parent.FieldByName(kvVal)))
 				if err != nil {
-					el.AddComplete(key, kv.Key, err.Error(), kv.Val, fv.Interface())
+					el[key] = te.XError{Code: kvKey, Message: err.Error(), ExpectedVal: kvVal, GivenVal: fv.Interface()}
 					break
 				}
 			} else if localFvType == FVTRegex {
-				err := tagFVs["regex"].fvFunc(fv, kv.Key)
+				err := tagFVs["regex"].fvFunc(fv, kvKey)
 				if err != nil {
-					el.AddComplete(key, kv.Key, err.Error(), kv.Val, fv.Interface())
+					el[key] = te.XError{Code: kvKey, Message: err.Error(), ExpectedVal: kvVal, GivenVal: fv.Interface()}
 					break
 				}
 			}

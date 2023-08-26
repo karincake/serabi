@@ -4,6 +4,8 @@ Validation for struct, with 3 type of validation based on how the validation wor
 - Field comparison validattion, checks the value of the field according to the given rule relative to other field
 - Regex validation, checks the value of the field accroding to the given rule simply using regex
 
+The code is made as simple as possible for the beginner to understand
+
 ## Usage
 serabi.Validate(data)
 
