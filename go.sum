@@ -10,8 +10,8 @@ github.com/jinzhu/inflection v1.0.0/go.mod h1:h+uFLlag+Qp1Va5pdKtLDYj+kHp5pxUVkr
 github.com/jinzhu/now v1.1.4/go.mod h1:d3SSVoowX0Lcu0IBviAWJpolVfI5UJVZZ7cO71lE/z8=
 github.com/jinzhu/now v1.1.5 h1:/o9tlHleP7gOFmsnYNz3RGnqzefHA47wQpKrrdTIwXQ=
 github.com/jinzhu/now v1.1.5/go.mod h1:d3SSVoowX0Lcu0IBviAWJpolVfI5UJVZZ7cO71lE/z8=
-github.com/karincake/tempe v0.0.7-20230816-b h1:VTbENWAJ+I153BGJ/SVcf4cqVdVcdhtlPGZPrsjpDs8=
-github.com/karincake/tempe v0.0.7-20230816-b/go.mod h1:xcL8U1S4oofQ+YeCxlw6tmcErdp7PL9Ad04caBB/laY=
+github.com/karincake/tempe v0.0.8-20230826-a h1:wbGEU4gObduLPoGOkWaunDtHB+DDc5SkCBlvL8wkMK0=
+github.com/karincake/tempe v0.0.8-20230826-a/go.mod h1:xcL8U1S4oofQ+YeCxlw6tmcErdp7PL9Ad04caBB/laY=
 github.com/mattn/go-sqlite3 v1.14.15 h1:vfoHhTN1af61xCRSWzFIWzx2YskyMTwHLrExkBOjvxI=
 github.com/microsoft/go-mssqldb v0.17.0 h1:Fto83dMZPnYv1Zwx5vHHxpNraeEaUlQ/hhHLgZiaenE=
 golang.org/x/crypto v0.6.0 h1:qfktjS5LUO+fFKeJXZ+ikTRijMmljikvG68fpMMruSc=

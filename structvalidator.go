@@ -2,6 +2,7 @@
 package serabi
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -32,6 +33,9 @@ const (
 	FVTField fvType = "fieldCompare"
 )
 
+// tag name to validate
+const tagName = "validate"
+
 // list of validator for the given key from tag
 var tagFVs map[string]fv = map[string]fv{}
 
@@ -40,11 +44,10 @@ var tagFVs map[string]fv = map[string]fv{}
 var regexes map[string]*regexp.Regexp = map[string]*regexp.Regexp{}
 var fields map[string]string = map[string]string{}
 
-// tag name to validate
-const tagName = "validate"
+var bRequired = []byte("required")
 
 // Validation of each field based on the registered tag
-func Validate(input any, nameSpaces ...string) te.Errors {
+func Validate(input any, nameSpaces ...string) error {
 	// identiy value and loop if its pointer until reaches non pointer
 	inputV := reflect.ValueOf(input)
 
@@ -62,18 +65,19 @@ func Validate(input any, nameSpaces ...string) te.Errors {
 	nameSpace := ""
 	if len(nameSpaces) > 0 {
 		if len(nameSpaces) > 1 && nameSpaces[1] != "" {
-			nameSpace += "(embedded:" + nameSpaces[0] + ")."
+			nameSpace += "(" + nameSpaces[0] + ")."
 		} else {
 			nameSpace += nameSpaces[0] + "."
 		}
 	}
 
 	// check each field
-	// inputT := reflect.TypeOf(inputV.Interface()) // keep this for now
+	// inputV.Type()
 	inputT := inputV.Type()
-	errList := te.NewErrors()
-	for i := 0; i < inputV.NumField(); i++ {
-		// identify type and value of the field
+	errList := te.XErrors{}
+	inputVNFC := inputV.NumField()
+	for i := 0; i < inputVNFC; i++ {
+		// 	// identify type and value of the field
 		fieldT := inputT.Field(i)
 		fieldV := inputV.Field(i)
 		for fieldV.Kind() == reflect.Ptr {
@@ -97,7 +101,7 @@ func Validate(input any, nameSpaces ...string) te.Errors {
 			}
 			tag = tags[0]
 
-			errList.Import(Validate(fieldV.Interface(), tag, embeddedMode).Get())
+			errList.Import(Validate(fieldV.Interface(), tag, embeddedMode).(te.XErrors))
 			continue
 		}
 
@@ -120,7 +124,7 @@ func Validate(input any, nameSpaces ...string) te.Errors {
 				// special case untuk required
 				required := false
 				for _, v := range parsedTag {
-					if v.Key == "required" {
+					if bytes.Equal(v.Key, bRequired) {
 						required = true
 						break
 					}
@@ -128,14 +132,14 @@ func Validate(input any, nameSpaces ...string) te.Errors {
 				// empty array
 				if fieldV.Len() == 0 {
 					if required {
-						errList[nameSpace+key] = te.NewError("required", ErrMessage["required"], "", fieldV.Interface().(string))
+						errList[nameSpace+key] = te.XError{Code: "required", Message: ErrMessage["required"], GivenVal: fieldV.Interface().(string)}
 					}
 					continue
 				}
 				// loop
 				if fieldV.Index(0).Kind() == reflect.Struct {
 					for ix := 0; ix < fieldV.Len(); ix++ {
-						errList.Import(Validate(fieldV.Index(ix).Interface(), fmt.Sprintf("%v[%v]", key, ix)).Get())
+						errList.Import(Validate(fieldV.Index(ix).Interface(), fmt.Sprintf("%v[%v]", key, ix)).(te.XErrors))
 					}
 				} else {
 					for ix := 0; ix < fieldV.Len(); ix++ {
@@ -156,7 +160,7 @@ func Validate(input any, nameSpaces ...string) te.Errors {
 }
 
 // Validation for IO Reader to help validate, for example, payload of http request
-func ValidateIoReader(container interface{}, input io.Reader) te.Errors {
+func ValidateIoReader(container interface{}, input io.Reader) error {
 	decoder := json.NewDecoder(input)
 	err := decoder.Decode(&container)
 	if err != nil {
@@ -165,7 +169,13 @@ func ValidateIoReader(container interface{}, input io.Reader) te.Errors {
 			cV = cV.Elem()
 		}
 		structName := cV.Type().Name()
-		return te.NewCompleteErrors("payload-bad", "payload-bad", fmt.Sprintf(ErrMessage["parsing-fail"], structName, err), fmt.Sprintf("value of %v", structName), "")
+		return te.XErrors{
+			"payload-bad": te.XError{
+				Code:        "payload-bad",
+				Message:     fmt.Sprintf(ErrMessage["parsing-fail"], structName, err),
+				ExpectedVal: fmt.Sprintf("value of %v", structName),
+			},
+		}
 	}
 
 	// same process with normal validation
@@ -174,7 +184,7 @@ func ValidateIoReader(container interface{}, input io.Reader) te.Errors {
 
 // Validation for url
 // caveat: url's structure makes it impossible to do deep parsing
-func ValidateURL(container any, url url.URL) te.Errors {
+func ValidateURL(container any, url url.URL) error {
 	cV := reflect.ValueOf(container).Elem()
 	for cV.Kind() == reflect.Pointer || cV.Kind() == reflect.Interface {
 		cV = cV.Elem()
@@ -182,7 +192,7 @@ func ValidateURL(container any, url url.URL) te.Errors {
 
 	cT := cV.Type()
 	values := url.Query()
-	errList := te.NewErrors()
+	errList := te.XErrors{}
 	for i := 0; i < cV.NumField(); i++ {
 		fieldV := cV.Field(i)
 		fieldT := cT.Field(i)
@@ -222,14 +232,14 @@ func ValidateURL(container any, url url.URL) te.Errors {
 			}
 		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, *int, *int8, *int16, *int32, *int64, *uint, *uint8, *uint16, *uint32, *uint64:
 			if valInt, err := strconv.Atoi(vals[0]); err != nil {
-				errList.AddComplete(key, key, err.Error(), vals[0], fieldV.Interface())
+				errList[key] = te.XError{Code: key, Message: err.Error(), ExpectedVal: vals[0], GivenVal: fieldV.Interface()}
 			} else {
 				fieldV.Set(h.IntToVal(valInt, fieldV))
 			}
 		case float64, *float64:
 			strFloat, err := strconv.ParseFloat(vals[0], 64)
 			if err != nil {
-				errList.AddComplete(key, key, err.Error(), vals[0], fieldV.Interface())
+				errList[key] = te.XError{Code: key, Message: err.Error(), ExpectedVal: vals[0], GivenVal: fieldV.Interface()}
 			}
 			if fieldV.Kind() == reflect.Ptr {
 				fieldV.Set(reflect.ValueOf(&strFloat))
@@ -239,7 +249,7 @@ func ValidateURL(container any, url url.URL) te.Errors {
 		case float32, *float32:
 			strFloat, err := strconv.ParseFloat(vals[0], 32)
 			if err != nil {
-				errList.AddComplete(key, key, err.Error(), vals[0], fieldV.Interface())
+				errList[key] = te.XError{Code: key, Message: err.Error(), ExpectedVal: vals[0], GivenVal: fieldV.Interface()}
 			}
 			strFloat32 := float32(strFloat)
 			if fieldV.Kind() == reflect.Ptr {
@@ -252,7 +262,7 @@ func ValidateURL(container any, url url.URL) te.Errors {
 		case datatypes.Date, *datatypes.Date:
 			time, err := time.Parse("2006-01-02T15:04:05.000Z", vals[0])
 			if err != nil {
-				errList.AddComplete(key, key, err.Error(), vals[0], fieldV.Interface())
+				errList[key] = te.XError{Code: key, Message: err.Error(), ExpectedVal: vals[0], GivenVal: fieldV.Interface()}
 			}
 			date := datatypes.Date(time)
 			if fieldV.Kind() == reflect.Ptr {
@@ -263,7 +273,7 @@ func ValidateURL(container any, url url.URL) te.Errors {
 		case time.Time, *time.Time:
 			time, err := time.Parse("2006-01-02T15:04:05.000Z", vals[0])
 			if err != nil {
-				errList.AddComplete(key, key, err.Error(), vals[0], fieldV.Interface())
+				errList[key] = te.XError{Code: key, Message: err.Error(), ExpectedVal: vals[0], GivenVal: fieldV.Interface()}
 			}
 			if fieldV.Kind() == reflect.Ptr {
 				fieldV.Set(reflect.ValueOf(&time))
@@ -277,7 +287,7 @@ func ValidateURL(container any, url url.URL) te.Errors {
 			for _, val := range vals {
 				if valInt, err := strconv.Atoi(val); err != nil {
 					failed = true
-					errList.AddComplete(key, key, err.Error(), val, fieldV.Interface())
+					errList[key] = te.XError{Code: key, Message: err.Error(), ExpectedVal: vals[0], GivenVal: fieldV.Interface()}
 				} else {
 					valX = append(valX, int8(valInt))
 				}

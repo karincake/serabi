@@ -29,7 +29,7 @@ func regexTagValidator(val reflect.Value, code string) error {
 	}
 
 	if !regexes[code].MatchString(h.ValStringer(val)) {
-		return errors.New("must be a valid \"" + code + "\" format")
+		return errors.New(ErrMessage[code])
 	}
 
 	return nil
