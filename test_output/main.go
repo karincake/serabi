@@ -8,7 +8,8 @@ import (
 )
 
 func main() {
-	data := t.DataMediumComplex{
+	s.CacheEnabled = true
+	data := &t.DataMediumComplex{
 		Name:    "123",
 		Address: "",
 		Age:     0,
@@ -16,6 +17,18 @@ func main() {
 		Phone:   "",
 	}
 	err := s.Validate(data)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	data = &t.DataMediumComplex{
+		Name:    "Santoso",
+		Address: "Jl Localhost",
+		Age:     0,
+		Email:   "",
+		Phone:   "",
+	}
+	err = s.Validate(data)
 	if err != nil {
 		fmt.Println(err.Error())
 	}

@@ -6,6 +6,10 @@ import (
 	s "github.com/karincake/serabi"
 )
 
+func init() {
+	s.CacheEnabled = true
+}
+
 func BenchmarkSmallStringSuccess(b *testing.B) {
 	instance := DataSmallSimpleString{
 		Name: "Santo Sembodo",
