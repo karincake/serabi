@@ -29,7 +29,7 @@ type DataMediumSimple struct {
 	Name    string `validate:"alphaSpace"`
 	Address string `validate:"maxlength=50"`
 	Age     uint8  `validate:"gt=15"`
-	Email   bool   `validate:"required"`
+	Email   string `validate:"required"`
 	Phone   string `validate:"numeric"`
 }
 
@@ -37,7 +37,7 @@ type DataMediumComplex struct {
 	Name    string `validate:"required;alphaSpace"`
 	Address string `validate:"required;minLength=10;maxlength=50"`
 	Age     uint8  `validate:"required;numeric;gt=15;lt=40"`
-	Email   bool   `validate:"required;email;minLength=10;maxlength=100"`
+	Email   string `validate:"required;email;minLength=10;maxlength=100"`
 	Phone   string `validate:"required;numeric;minLength=10;maxlength=20"`
 }
 
@@ -73,7 +73,7 @@ type DataHugeComplex struct {
 	Name      string `validate:"required;alphaSpace"`
 	Address   string `validate:"required;minLength=10;maxlength=50"`
 	Age       uint8  `validate:"required;numeric;gt=15;lt=40"`
-	Email     bool   `validate:"required;email;minLength=10;maxlength=100"`
+	Email     string `validate:"required;email;minLength=10;maxlength=100"`
 	Phone     string `validate:"required;numeric;minLength=10;maxlength=20"`
 	WorkStats workStatsComplex
 	GameStats gameStatsComplex

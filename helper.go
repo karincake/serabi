@@ -14,41 +14,20 @@ type keyVal struct {
 }
 
 // parse tag for key - val
+// turns out processing manually using slice of byte is
+// faster than using split function
 func parseTag(tag string) []keyVal {
 	kvList := []keyVal{}
 	tagByte := []byte(tag)
 	lastI := 0
+	// split by character ";"
 	for i, v := range tagByte {
-		if v == 59 {
-			kvByte := tagByte[lastI:i]
+		if v == 59 { // 59 is for character ";"
+			kvList = append(kvList, identifyTagRule(tagByte[lastI:i]))
 			lastI = i + 1
-			eqIdx := 0
-			for i2, v2 := range kvByte {
-				if v2 == 61 {
-					eqIdx = i2
-					break
-				}
-			}
-			if eqIdx > 0 {
-				kvList = append(kvList, keyVal{Key: kvByte[:eqIdx], Val: kvByte[eqIdx+1:]})
-			} else {
-				kvList = append(kvList, keyVal{Key: kvByte})
-			}
 		}
 	}
-	kvByte := tagByte[lastI:]
-	eqIdx := 0
-	for i2, v2 := range kvByte {
-		if v2 == 61 {
-			eqIdx = i2
-			break
-		}
-	}
-	if eqIdx > 0 {
-		kvList = append(kvList, keyVal{Key: kvByte[:eqIdx], Val: kvByte[eqIdx+1:]})
-	} else {
-		kvList = append(kvList, keyVal{Key: kvByte})
-	}
+	kvList = append(kvList, identifyTagRule(tagByte[lastI:]))
 	return kvList
 }
 
@@ -58,7 +37,7 @@ func checkParsedTag(parent *reflect.Value, parsedTag []keyVal, fv reflect.Value,
 		kvKey := string(kv.Key)
 		kvVal := string(kv.Val)
 		if _, ok := tagFVs[kvKey]; ok {
-			localFvType := tagFVs[kvKey].fvType
+			localFvType := tagFVs[kvKey].FvType
 			if localFvType == FVTBasic {
 				err := tagFVs[kvKey].FvFunc(fv, kvVal)
 				if err != nil {
@@ -79,5 +58,22 @@ func checkParsedTag(parent *reflect.Value, parsedTag []keyVal, fv reflect.Value,
 				}
 			}
 		}
+	}
+}
+
+// split and return
+func identifyTagRule(kv []byte) keyVal {
+	eqIdx := 0
+	// split by =
+	for i2, v2 := range kv {
+		if v2 == 61 { // 61 is for character "="
+			eqIdx = i2
+			break
+		}
+	}
+	if eqIdx > 0 {
+		return keyVal{Key: kv[:eqIdx], Val: kv[eqIdx+1:]}
+	} else {
+		return keyVal{Key: kv}
 	}
 }

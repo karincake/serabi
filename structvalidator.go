@@ -20,17 +20,17 @@ import (
 
 // viladator func interface?
 // param: reflect value, string
-type fvType string
+type FvType string
 type FvFunc func(reflect.Value, string) error
 type fv struct {
-	fvType
+	FvType
 	FvFunc
 }
 
 const (
-	FVTBasic fvType = "func"
-	FVTRegex fvType = "regex"
-	FVTField fvType = "fieldCompare"
+	FVTBasic FvType = "func"
+	FVTRegex FvType = "regex"
+	FVTField FvType = "fieldCompare"
 )
 
 // tag name to validate
