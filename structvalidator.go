@@ -71,84 +71,198 @@ func Validate(input any, nameSpaces ...string) error {
 		}
 	}
 
-	// check each field
-	// inputV.Type()
+	// get the type
 	inputT := inputV.Type()
 	errList := te.XErrors{}
-	inputVNFC := inputV.NumField()
-	for i := 0; i < inputVNFC; i++ {
-		// 	// identify type and value of the field
-		fieldT := inputT.Field(i)
-		fieldV := inputV.Field(i)
-		for fieldV.Kind() == reflect.Ptr {
-			if fieldV.IsZero() {
-				break
-			}
-			fieldV = fieldV.Elem()
+
+	// check cache
+	className := inputT.Name()
+	if CacheEnabled && !cache.classExists(className) {
+		rc := registeredClass{
+			inputVNFC: inputV.NumField(),
+			fieldT:    []reflect.StructField{},
+			parsedTag: [][]keyVal{},
 		}
-
-		// if current field is struct, validate again
-		typeString := fieldT.Type.String()
-		if (fieldT.Type.Kind() == reflect.Struct) && typeString != "time.Time" {
-			embeddedMode := ""
-			if fieldT.Anonymous {
-				embeddedMode = "(embedded)"
-			}
-			tag := fieldT.Tag.Get("json")
-			tags := strings.Split(tag, ",")
-			if tags[0] == "" {
-				tag = fieldT.Name
-			}
-			tag = tags[0]
-
-			errList.Import(Validate(fieldV.Interface(), tag, embeddedMode).(te.XErrors))
-			continue
-		}
-
-		tag := fieldT.Tag.Get(tagName)
-		if tag != "" {
-			parsedTag := parseTag(tag)
-			key := fieldT.Tag.Get("json")
-			if key != "" {
-				keys := strings.Split(key, ",")
-				if keys[0] != "" {
-					key = keys[0]
-				} else {
-					key = fieldT.Name
+		for i := 0; i < rc.inputVNFC; i++ {
+			// 	// identify type and value of the field
+			fieldV := inputV.Field(i)
+			rc.fieldT = append(rc.fieldT, inputT.Field(i))
+			for fieldV.Kind() == reflect.Ptr {
+				if fieldV.IsZero() {
+					break
 				}
-			} else {
-				key = fieldT.Name
+				fieldV = fieldV.Elem()
 			}
-			// based on slice or not
-			if fieldV.Kind() == reflect.Slice {
-				// special case untuk required
-				required := false
-				for _, v := range parsedTag {
-					if bytes.Equal(v.Key, bRequired) {
-						required = true
-						break
+
+			// if current field is struct, validate again
+			typeString := rc.fieldT[i].Type.String()
+			if (rc.fieldT[i].Type.Kind() == reflect.Struct) && typeString != "time.Time" {
+				embeddedMode := ""
+				if rc.fieldT[i].Anonymous {
+					embeddedMode = "(embedded)"
+				}
+				errList.Import(Validate(fieldV.Interface(), getJsonTag(&rc.fieldT[i]), embeddedMode).(te.XErrors))
+				continue
+			}
+
+			rc.tag = append(rc.tag, rc.fieldT[i].Tag.Get(tagName))
+			if rc.tag[i] != "" {
+				rc.key = append(rc.key, getJsonTag(&rc.fieldT[i]))
+				rc.parsedTag = append(rc.parsedTag, parseTag(rc.tag[i]))
+				// based on slice or not
+				if fieldV.Kind() == reflect.Slice {
+					// special case untuk required
+					required := false
+					for _, v := range rc.parsedTag[i] {
+						if bytes.Equal(v.Key, bRequired) {
+							required = true
+							break
+						}
 					}
-				}
-				// empty array
-				if fieldV.Len() == 0 {
-					if required {
-						errList[nameSpace+key] = te.XError{Code: "required", Message: ErrMessage["required"], GivenVal: fieldV.Interface().(string)}
+					// empty array
+					if fieldV.Len() == 0 {
+						if required {
+							errList[nameSpace+rc.key[i]] = te.XError{Source: rc.fieldT[i].Name, Code: "required", Message: ErrMessage["required"], GivenVal: fieldV.Interface().(string)}
+						}
+						continue
 					}
-					continue
-				}
-				// loop
-				if fieldV.Index(0).Kind() == reflect.Struct {
-					for ix := 0; ix < fieldV.Len(); ix++ {
-						errList.Import(Validate(fieldV.Index(ix).Interface(), fmt.Sprintf("%v[%v]", key, ix)).(te.XErrors))
+					// loop
+					if fieldV.Index(0).Kind() == reflect.Struct {
+						for ix := 0; ix < fieldV.Len(); ix++ {
+							errList.Import(Validate(fieldV.Index(ix).Interface(), fmt.Sprintf("%v[%v]", rc.key, ix)).(te.XErrors))
+						}
+					} else {
+						for ix := 0; ix < fieldV.Len(); ix++ {
+							checkParsedTag(&inputV, rc.parsedTag[i], fieldV.Index(ix), errList, fmt.Sprintf("%v[%v]", rc.key, ix))
+						}
 					}
 				} else {
-					for ix := 0; ix < fieldV.Len(); ix++ {
-						checkParsedTag(&inputV, parsedTag, fieldV.Index(ix), errList, fmt.Sprintf("%v[%v]", key, ix))
-					}
+					// non slice
+					checkParsedTag(&inputV, rc.parsedTag[i], fieldV, errList, nameSpace+rc.key[i])
 				}
 			} else {
-				// non slice
-				checkParsedTag(&inputV, parsedTag, fieldV, errList, nameSpace+key)
+				rc.parsedTag = append(rc.parsedTag, nil)
+			}
+		}
+		cache.push(className, rc)
+	} else if CacheEnabled {
+		rc := cache.get(className)
+		for i := 0; i < rc.inputVNFC; i++ {
+			// 	// identify type and value of the field
+			fieldV := inputV.Field(i)
+			for fieldV.Kind() == reflect.Ptr {
+				if fieldV.IsZero() {
+					break
+				}
+				fieldV = fieldV.Elem()
+			}
+
+			// if current field is struct, validate again
+			typeString := rc.fieldT[i].Type.String()
+			if (rc.fieldT[i].Type.Kind() == reflect.Struct) && typeString != "time.Time" {
+				embeddedMode := ""
+				if rc.fieldT[i].Anonymous {
+					embeddedMode = "(embedded)"
+				}
+				errList.Import(Validate(fieldV.Interface(), getJsonTag(&rc.fieldT[i]), embeddedMode).(te.XErrors))
+				continue
+			}
+
+			if rc.tag[i] != "" {
+				rc.key[i] = getJsonTag(&rc.fieldT[i])
+				// based on slice or not
+				if fieldV.Kind() == reflect.Slice {
+					// special case untuk required
+					required := false
+					for _, v := range rc.parsedTag[i] {
+						if bytes.Equal(v.Key, bRequired) {
+							required = true
+							break
+						}
+					}
+					// empty array
+					if fieldV.Len() == 0 {
+						if required {
+							errList[nameSpace+rc.key[i]] = te.XError{Source: rc.fieldT[i].Name, Code: "required", Message: ErrMessage["required"], GivenVal: fieldV.Interface().(string)}
+						}
+						continue
+					}
+					// loop
+					if fieldV.Index(0).Kind() == reflect.Struct {
+						for ix := 0; ix < fieldV.Len(); ix++ {
+							errList.Import(Validate(fieldV.Index(ix).Interface(), fmt.Sprintf("%v[%v]", rc.key, ix)).(te.XErrors))
+						}
+					} else {
+						for ix := 0; ix < fieldV.Len(); ix++ {
+							checkParsedTag(&inputV, rc.parsedTag[i], fieldV.Index(ix), errList, fmt.Sprintf("%v[%v]", rc.key, ix))
+						}
+					}
+				} else {
+					// non slice
+					// checkParsedTag(&inputV, rc.parsedTag[i], fieldV, errList, nameSpace+rc.key[i])
+				}
+			}
+		}
+	} else {
+		// check each field
+		inputVNFC := inputV.NumField()
+		for i := 0; i < inputVNFC; i++ {
+			// identify type and value of the field
+			fieldV := inputV.Field(i)
+			fieldT := inputT.Field(i)
+			for fieldV.Kind() == reflect.Ptr {
+				if fieldV.IsZero() {
+					break
+				}
+				fieldV = fieldV.Elem()
+			}
+
+			// if current field is struct, validate again
+			typeString := fieldT.Type.String()
+			if (fieldT.Type.Kind() == reflect.Struct) && typeString != "time.Time" {
+				embeddedMode := ""
+				if fieldT.Anonymous {
+					embeddedMode = "(embedded)"
+				}
+				errList.Import(Validate(fieldV.Interface(), getJsonTag(&fieldT), embeddedMode).(te.XErrors))
+				continue
+			}
+
+			tag := fieldT.Tag.Get(tagName)
+			if tag != "" {
+				key := getJsonTag(&fieldT)
+				parsedTag := parseTag(tag)
+				// based on slice or not
+				if fieldV.Kind() == reflect.Slice {
+					// special case untuk required
+					required := false
+					for _, v := range parsedTag {
+						if bytes.Equal(v.Key, bRequired) {
+							required = true
+							break
+						}
+					}
+					// empty array
+					if fieldV.Len() == 0 {
+						if required {
+							errList[nameSpace+key] = te.XError{Source: fieldT.Name, Code: "required", Message: ErrMessage["required"], GivenVal: fieldV.Interface().(string)}
+						}
+						continue
+					}
+					// loop
+					if fieldV.Index(0).Kind() == reflect.Struct {
+						for ix := 0; ix < fieldV.Len(); ix++ {
+							errList.Import(Validate(fieldV.Index(ix).Interface(), fmt.Sprintf("%v[%v]", key, ix)).(te.XErrors))
+						}
+					} else {
+						for ix := 0; ix < fieldV.Len(); ix++ {
+							checkParsedTag(&inputV, parsedTag, fieldV.Index(ix), errList, fmt.Sprintf("%v[%v]", key, ix))
+						}
+					}
+				} else {
+					// non slice
+					checkParsedTag(&inputV, parsedTag, fieldV, errList, nameSpace+key)
+				}
 			}
 		}
 	}

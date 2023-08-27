@@ -2,6 +2,7 @@ package serabi
 
 import (
 	"reflect"
+	"strings"
 
 	h "github.com/karincake/serabi/helper"
 	te "github.com/karincake/tempe/error"
@@ -41,19 +42,19 @@ func checkParsedTag(parent *reflect.Value, parsedTag []keyVal, fv reflect.Value,
 			if localFvType == FVTBasic {
 				err := tagFVs[kvKey].FvFunc(fv, kvVal)
 				if err != nil {
-					el[key] = te.XError{Code: kvKey, Message: err.Error(), ExpectedVal: kvVal, GivenVal: fv.Interface()}
+					el[key] = te.XError{Source: key, Code: kvKey, Message: err.Error(), ExpectedVal: kvVal, GivenVal: fv.Interface()}
 					break
 				}
 			} else if localFvType == FVTField {
 				err := tagFVs[kvKey].FvFunc(fv, h.ValStringer(parent.FieldByName(kvVal)))
 				if err != nil {
-					el[key] = te.XError{Code: kvKey, Message: err.Error(), ExpectedVal: kvVal, GivenVal: fv.Interface()}
+					el[key] = te.XError{Source: key, Code: kvKey, Message: err.Error(), ExpectedVal: kvVal, GivenVal: fv.Interface()}
 					break
 				}
 			} else if localFvType == FVTRegex {
 				err := tagFVs["regex"].FvFunc(fv, kvKey)
 				if err != nil {
-					el[key] = te.XError{Code: kvKey, Message: err.Error(), ExpectedVal: kvVal, GivenVal: fv.Interface()}
+					el[key] = te.XError{Source: key, Code: kvKey, Message: err.Error(), ExpectedVal: kvVal, GivenVal: fv.Interface()}
 					break
 				}
 			}
@@ -76,4 +77,14 @@ func identifyTagRule(kv []byte) keyVal {
 	} else {
 		return keyVal{Key: kv}
 	}
+}
+
+// get json tag
+func getJsonTag(t *reflect.StructField) string {
+	tag := t.Tag.Get("json")
+	tags := strings.Split(tag, ",")
+	if tags[0] == "" {
+		return t.Name
+	}
+	return tags[0]
 }
