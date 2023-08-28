@@ -2,8 +2,8 @@
 package serabi
 
 import (
-	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -44,7 +44,7 @@ var tagFVs map[string]fv = map[string]fv{}
 var regexes map[string]*regexp.Regexp = map[string]*regexp.Regexp{}
 var fields map[string]string = map[string]string{}
 
-var bRequired = []byte("required")
+var required = "required"
 
 // Validation of each field based on the registered tag
 func Validate(input any, nameSpaces ...string) error {
@@ -87,6 +87,9 @@ func Validate(input any, nameSpaces ...string) error {
 			// 	// identify type and value of the field
 			fieldV := inputV.Field(i)
 			rc.fieldT = append(rc.fieldT, inputT.Field(i))
+			rc.tag = append(rc.tag, rc.fieldT[i].Tag.Get(tagName))
+			rc.key = append(rc.key, keyOrJsonTag(rc.fieldT[i].Name, rc.fieldT[i].Tag.Get("json")))
+
 			for fieldV.Kind() == reflect.Ptr {
 				if fieldV.IsZero() {
 					break
@@ -95,26 +98,25 @@ func Validate(input any, nameSpaces ...string) error {
 			}
 
 			// if current field is struct, validate again
-			typeString := rc.fieldT[i].Type.String()
-			if (rc.fieldT[i].Type.Kind() == reflect.Struct) && typeString != "time.Time" {
+			rc.typeString = append(rc.typeString, rc.fieldT[i].Type.String())
+			if (rc.fieldT[i].Type.Kind() == reflect.Struct) && rc.typeString[i] != "time.Time" {
 				embeddedMode := ""
 				if rc.fieldT[i].Anonymous {
 					embeddedMode = "(embedded)"
 				}
-				errList.Import(Validate(fieldV.Interface(), getJsonTag(&rc.fieldT[i]), embeddedMode).(te.XErrors))
+				errList.Import(Validate(fieldV.Interface(), rc.key[i], embeddedMode).(te.XErrors))
 				continue
 			}
 
 			rc.tag = append(rc.tag, rc.fieldT[i].Tag.Get(tagName))
 			if rc.tag[i] != "" {
-				rc.key = append(rc.key, getJsonTag(&rc.fieldT[i]))
 				rc.parsedTag = append(rc.parsedTag, parseTag(rc.tag[i]))
 				// based on slice or not
 				if fieldV.Kind() == reflect.Slice {
 					// special case untuk required
 					required := false
 					for _, v := range rc.parsedTag[i] {
-						if bytes.Equal(v.Key, bRequired) {
+						if string(v.Key) == "required" {
 							required = true
 							break
 						}
@@ -122,18 +124,19 @@ func Validate(input any, nameSpaces ...string) error {
 					// empty array
 					if fieldV.Len() == 0 {
 						if required {
-							errList[nameSpace+rc.key[i]] = te.XError{Source: rc.fieldT[i].Name, Code: "required", Message: ErrMessage["required"], GivenVal: fieldV.Interface().(string)}
+							errList[nameSpace+rc.key[i]] = te.XError{Code: "required", Message: ErrMessage["required"], GivenVal: fieldV.Interface().(string)}
 						}
 						continue
 					}
 					// loop
 					if fieldV.Index(0).Kind() == reflect.Struct {
 						for ix := 0; ix < fieldV.Len(); ix++ {
-							errList.Import(Validate(fieldV.Index(ix).Interface(), fmt.Sprintf("%v[%v]", rc.key, ix)).(te.XErrors))
+							errList.Import(Validate(fieldV.Index(ix).Interface(), fmt.Sprintf("%v[%v]", rc.key[i], ix)).(te.XErrors))
 						}
 					} else {
 						for ix := 0; ix < fieldV.Len(); ix++ {
-							checkParsedTag(&inputV, rc.parsedTag[i], fieldV.Index(ix), errList, fmt.Sprintf("%v[%v]", rc.key, ix))
+							// fv :=
+							checkParsedTag(&inputV, rc.parsedTag[i], fieldV.Index(ix), errList, fmt.Sprintf("%v[%v]", rc.key[i], ix))
 						}
 					}
 				} else {
@@ -158,24 +161,22 @@ func Validate(input any, nameSpaces ...string) error {
 			}
 
 			// if current field is struct, validate again
-			typeString := rc.fieldT[i].Type.String()
-			if (rc.fieldT[i].Type.Kind() == reflect.Struct) && typeString != "time.Time" {
+			if (rc.fieldT[i].Type.Kind() == reflect.Struct) && rc.typeString[i] != "time.Time" {
 				embeddedMode := ""
 				if rc.fieldT[i].Anonymous {
 					embeddedMode = "(embedded)"
 				}
-				errList.Import(Validate(fieldV.Interface(), getJsonTag(&rc.fieldT[i]), embeddedMode).(te.XErrors))
+				errList.Import(Validate(fieldV.Interface(), keyOrJsonTag(rc.fieldT[i].Name, rc.fieldT[i].Tag.Get("json")), embeddedMode).(te.XErrors))
 				continue
 			}
 
 			if rc.tag[i] != "" {
-				rc.key[i] = getJsonTag(&rc.fieldT[i])
 				// based on slice or not
 				if fieldV.Kind() == reflect.Slice {
 					// special case untuk required
 					required := false
 					for _, v := range rc.parsedTag[i] {
-						if bytes.Equal(v.Key, bRequired) {
+						if string(v.Key) == "required" {
 							required = true
 							break
 						}
@@ -183,7 +184,7 @@ func Validate(input any, nameSpaces ...string) error {
 					// empty array
 					if fieldV.Len() == 0 {
 						if required {
-							errList[nameSpace+rc.key[i]] = te.XError{Source: rc.fieldT[i].Name, Code: "required", Message: ErrMessage["required"], GivenVal: fieldV.Interface().(string)}
+							errList[nameSpace+rc.key[i]] = te.XError{Code: "required", Message: ErrMessage["required"], GivenVal: h.ValStringer(fieldV)}
 						}
 						continue
 					}
@@ -194,19 +195,19 @@ func Validate(input any, nameSpaces ...string) error {
 						}
 					} else {
 						for ix := 0; ix < fieldV.Len(); ix++ {
+							// fv := fieldV.Index(ix)
 							checkParsedTag(&inputV, rc.parsedTag[i], fieldV.Index(ix), errList, fmt.Sprintf("%v[%v]", rc.key, ix))
 						}
 					}
 				} else {
 					// non slice
-					// checkParsedTag(&inputV, rc.parsedTag[i], fieldV, errList, nameSpace+rc.key[i])
+					checkParsedTag(&inputV, rc.parsedTag[i], fieldV, errList, nameSpace+rc.key[i])
 				}
 			}
 		}
 	} else {
 		// check each field
-		inputVNFC := inputV.NumField()
-		for i := 0; i < inputVNFC; i++ {
+		for i := 0; i < inputV.NumField(); i++ {
 			// identify type and value of the field
 			fieldV := inputV.Field(i)
 			fieldT := inputT.Field(i)
@@ -224,29 +225,26 @@ func Validate(input any, nameSpaces ...string) error {
 				if fieldT.Anonymous {
 					embeddedMode = "(embedded)"
 				}
-				errList.Import(Validate(fieldV.Interface(), getJsonTag(&fieldT), embeddedMode).(te.XErrors))
+				errList.Import(Validate(fieldV.Interface(), keyOrJsonTag(fieldT.Name, fieldT.Tag.Get("json")), embeddedMode).(te.XErrors))
 				continue
 			}
 
 			tag := fieldT.Tag.Get(tagName)
 			if tag != "" {
-				key := getJsonTag(&fieldT)
+				key := keyOrJsonTag(fieldT.Name, fieldT.Tag.Get("json"))
+				// key := keyOrJsonTag(fieldT.Name, fieldT.Tag.Get("json"))
 				parsedTag := parseTag(tag)
 				// based on slice or not
 				if fieldV.Kind() == reflect.Slice {
 					// special case untuk required
-					required := false
 					for _, v := range parsedTag {
-						if bytes.Equal(v.Key, bRequired) {
-							required = true
+						if string(v.Key) == "required" && fieldV.Len() == 0 {
+							errList[nameSpace+key] = te.XError{Code: "required", Message: ErrMessage["required"], GivenVal: fieldV.Interface().(string)}
 							break
 						}
 					}
 					// empty array
 					if fieldV.Len() == 0 {
-						if required {
-							errList[nameSpace+key] = te.XError{Source: fieldT.Name, Code: "required", Message: ErrMessage["required"], GivenVal: fieldV.Interface().(string)}
-						}
 						continue
 					}
 					// loop
@@ -483,7 +481,7 @@ func AddTagForField(tag string, f FvFunc) {
 func AddTagForRegex(tag string, r string, msg string) {
 	tagFVs[tag] = fv{FVTRegex, regexTagValidator}
 	regexes[tag] = regexp.MustCompile(r)
-	ErrMessage[tag] = msg
+	Errors[tag] = errors.New(msg)
 }
 
 // Remove a tag validator

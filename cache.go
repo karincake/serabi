@@ -11,14 +11,15 @@ var CacheEnabled = false
 var CacheMaxCount = 5
 
 type registeredClass struct {
-	name      string
-	inputVNFC int
-	fieldT    []reflect.StructField
-	tag       []string
-	key       []string
-	parsedTag [][]keyVal
-	tagNames  []string
-	next      *registeredClass
+	name       string
+	inputVNFC  int
+	fieldT     []reflect.StructField
+	tag        []string
+	key        []string
+	typeString []string
+	parsedTag  [][]keyVal
+	tagNames   []string
+	next       *registeredClass
 }
 
 type registeredClassList struct {
