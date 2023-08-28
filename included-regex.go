@@ -3,7 +3,6 @@ package serabi
 // included default tag validation for regex
 
 import (
-	"errors"
 	"reflect"
 
 	h "github.com/karincake/serabi/helper"
@@ -24,12 +23,12 @@ func init() {
 
 // /// Field checkers
 func regexTagValidator(val reflect.Value, code string) error {
-	if (val.Kind() == reflect.Pointer && val.IsNil()) || val.String() == "" {
+	if val.String() == "" {
 		return nil
 	}
 
 	if !regexes[code].MatchString(h.ValStringer(val)) {
-		return errors.New(ErrMessage[code])
+		return Errors[code]
 	}
 
 	return nil
