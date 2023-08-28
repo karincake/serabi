@@ -22,7 +22,7 @@ func BenchmarkSmallStringSuccess(b *testing.B) {
 
 func BenchmarkSmallNumberSuccess(b *testing.B) {
 	instance := DataSmallSimpleNumber{
-		Age: 25,
+		Age: 30,
 	}
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {

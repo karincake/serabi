@@ -8,10 +8,10 @@ import (
 )
 
 func main() {
-	s.CacheEnabled = true
+	// s.CacheEnabled = true
 	data := &t.DataMediumComplex{
-		Name:    "123",
-		Address: "",
+		Name:    "Sa",
+		Address: "2",
 		Age:     0,
 		Email:   "",
 		Phone:   "",

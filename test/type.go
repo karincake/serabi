@@ -34,7 +34,7 @@ type DataMediumSimple struct {
 }
 
 type DataMediumComplex struct {
-	Name    string `validate:"required;alphaSpace"`
+	Name    string `validate:"required;alphaSpace;minLength=10;maxlength=50"`
 	Address string `validate:"required;minLength=10;maxlength=50"`
 	Age     uint8  `validate:"required;numeric;gt=15;lt=40"`
 	Email   string `validate:"required;email;minLength=10;maxlength=100"`
