@@ -3,7 +3,7 @@ module github.com/karincake/serabi
 go 1.19
 
 require (
-	github.com/karincake/tempe v0.0.8-20230826-a
+	github.com/karincake/tempe v0.0.8
 	gorm.io/datatypes v1.2.0
 )
 

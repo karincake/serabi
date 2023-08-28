@@ -1,17 +1,20 @@
 package serabi
 
+import "errors"
+
 // To make error messages easier to manage
 var ErrMessage map[string]string = make(map[string]string)
+var Errors map[string]error = make(map[string]error)
 
 func init() {
-	ErrMessage["parsing-fail"] = "parsing failed for %v, error: %v"
-	ErrMessage["required"] = "required"
-	ErrMessage["eq"] = "must be the same with  %v"
-	ErrMessage["gt"] = "must be greater than %v"
-	ErrMessage["gte"] = "must be greater than be equal to %v"
-	ErrMessage["lt"] = "must be less than %v"
-	ErrMessage["lte"] = "must be less than or equal to %v"
-	ErrMessage["minLength"] = "the minimum length is %v characters"
-	ErrMessage["maxLength"] = "the maximum length is %v characters"
-	ErrMessage["alpha"] = "must be alphabet"
+	Errors["parsing-fail"] = errors.New("parsing failed for %v, error: %v")
+	Errors["required"] = errors.New("value is required")
+	Errors["eq"] = errors.New("must be the same with")
+	Errors["gt"] = errors.New("must be greater than the limit")
+	Errors["gte"] = errors.New("must be greater than or equal to the limit")
+	Errors["lt"] = errors.New("must be less than the limit")
+	Errors["lte"] = errors.New("must be less than or equal to the limit")
+	Errors["minLength"] = errors.New("the characters length below the limit")
+	Errors["maxLength"] = errors.New("the characters length exceed the limit")
+	Errors["alpha"] = errors.New("must be alphabet")
 }

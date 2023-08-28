@@ -4,7 +4,6 @@ package serabi
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 	"strconv"
 
@@ -27,13 +26,13 @@ func init() {
 func requiredTagValidator(val reflect.Value, expectVal string) error {
 	kind := val.Kind()
 	if (kind == reflect.String && val.String() == "") || (kind == reflect.Ptr && val.IsNil()) {
-		return errors.New(ErrMessage["required"])
+		return Errors["required"]
 	} else if kind >= reflect.Int && kind <= reflect.Int64 && expectVal != "allowzero" && val.Int() == 0 {
-		return errors.New(ErrMessage["required"])
+		return Errors["required"]
 	} else if kind >= reflect.Uint && kind <= reflect.Uint64 && expectVal != "allowzero" && val.Uint() == 0 {
-		return errors.New(ErrMessage["required"])
+		return Errors["required"]
 	} else if kind >= reflect.Float32 && kind <= reflect.Float64 && expectVal != "allowzero" && val.Float() == 0 {
-		return errors.New(ErrMessage["required"])
+		return Errors["required"]
 	}
 	return nil
 }
@@ -43,11 +42,12 @@ func gtTagValidator(val reflect.Value, expectVal string) error {
 		return nil
 	}
 
+	resourceToNumval(val, expectVal, "<")
 	val1, val2, err := resourceToNumval(val, expectVal, "<")
 	if err != nil {
 		return err
 	} else if val1 <= val2 {
-		return fmt.Errorf(ErrMessage["gt"], expectVal)
+		return Errors["gt"]
 	}
 	return nil
 }
@@ -61,7 +61,7 @@ func gteTagValidator(val reflect.Value, expectVal string) error {
 	if err != nil {
 		return err
 	} else if val1 < val2 {
-		return fmt.Errorf(ErrMessage["gte"], expectVal)
+		return Errors["gte"]
 	}
 	return nil
 }
@@ -75,7 +75,7 @@ func ltTagValidator(val reflect.Value, expectVal string) error {
 	if err != nil {
 		return err
 	} else if val1 >= val2 {
-		return fmt.Errorf(ErrMessage["lt"], expectVal)
+		return Errors["lt"]
 	}
 	return nil
 }
@@ -89,7 +89,7 @@ func lteTagValidator(val reflect.Value, expectVal string) error {
 	if err != nil {
 		return err
 	} else if val1 > val2 {
-		return fmt.Errorf(ErrMessage["lte"], expectVal)
+		return Errors["lte"]
 	}
 	return nil
 }
@@ -100,12 +100,12 @@ func minLengthTagValidator(val reflect.Value, expectVal string) error {
 	}
 	opts0Int, err := strconv.Atoi(expectVal)
 	if err != nil {
-		return errors.New(ErrMessage["numeric"])
+		panic(Errors["numeric"])
 	}
 
 	valC := h.ValStringer(val) // value converted
 	if len(valC) < opts0Int {
-		return fmt.Errorf(ErrMessage["minLength"], expectVal)
+		return Errors["minLength"]
 	}
 	return nil
 }
@@ -116,12 +116,12 @@ func maxLengthTagValidator(val reflect.Value, expectVal string) error {
 	}
 	opts0Int, err := strconv.Atoi(expectVal)
 	if err != nil {
-		return errors.New(ErrMessage["numeric"])
+		panic(Errors["numeric"])
 	}
 
 	valC := h.ValStringer(val) // value converted
 	if len(valC) > opts0Int {
-		return fmt.Errorf(ErrMessage["maxLength"], expectVal)
+		return Errors["maxLength"]
 	}
 	return nil
 }
