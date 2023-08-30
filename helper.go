@@ -14,8 +14,8 @@ type keyVal struct {
 }
 
 // parse tag for key - val
-// turns out processing manually using slice of byte is
-// faster than using split function
+// turns out processing manually using slice of byte is faster than using split
+// function possibly due to the fixed part that has to be searched
 func parseTag(tag string) []keyVal {
 	kvList := []keyVal{}
 	tagByte := []byte(tag)
@@ -87,9 +87,9 @@ func keyOrJsonTag(key, jsonTag string) string {
 		return key
 	}
 	tagByte := []byte(jsonTag)
-	pos := len(tagByte) + 1
+	pos := len(tagByte)
 	for i, v := range tagByte {
-		if v == 54 {
+		if v == 44 { // 44 is for character ","
 			pos = i + 1
 		}
 	}

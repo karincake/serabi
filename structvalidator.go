@@ -2,20 +2,18 @@
 package serabi
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"reflect"
 	"regexp"
-	"strconv"
-	"strings"
-	"time"
+
+	s "github.com/karincake/semprit"
+	te "github.com/karincake/tempe/error"
 
 	h "github.com/karincake/serabi/helper"
-	te "github.com/karincake/tempe/error"
-	"gorm.io/datatypes"
 )
 
 // viladator func interface?
@@ -272,188 +270,33 @@ func Validate(input any, nameSpaces ...string) error {
 }
 
 // Validation for IO Reader to help validate, for example, payload of http request
-func ValidateIoReader(container interface{}, input io.Reader) error {
-	decoder := json.NewDecoder(input)
-	err := decoder.Decode(&container)
+func ValidateIoReader(container any, input io.Reader) error {
+	err := s.JsonFromIOReader(container, input)
 	if err != nil {
-		cV := reflect.ValueOf(container)
-		for cV.Kind() == reflect.Pointer || cV.Kind() == reflect.Interface {
-			cV = cV.Elem()
-		}
-		structName := cV.Type().Name()
-		return te.XErrors{
-			"payload-bad": te.XError{
-				Code:        "payload-bad",
-				Message:     fmt.Sprintf(ErrMessage["parsing-fail"], structName, err),
-				ExpectedVal: fmt.Sprintf("value of %v", structName),
-			},
-		}
+		return te.XErrors{"payload-bad": err.(te.XError)}
 	}
 
 	// same process with normal validation
 	return Validate(container)
 }
 
+// Validation for form-data
+func ValidateFormData(container any, input *http.Request) error {
+	err := s.FormDataFromHttp(container, input)
+	fmt.Println(err)
+	if err != nil {
+		return te.XErrors{"payload-bad": err.(te.XError)}
+	}
+
+	return Validate(container)
+}
+
 // Validation for url
 // caveat: url's structure makes it impossible to do deep parsing
-func ValidateURL(container any, url url.URL) error {
-	cV := reflect.ValueOf(container).Elem()
-	for cV.Kind() == reflect.Pointer || cV.Kind() == reflect.Interface {
-		cV = cV.Elem()
-	}
-
-	cT := cV.Type()
-	values := url.Query()
-	errList := te.XErrors{}
-	for i := 0; i < cV.NumField(); i++ {
-		fieldV := cV.Field(i)
-		fieldT := cT.Field(i)
-
-		if !fieldV.CanSet() {
-			continue
-		}
-
-		key := fieldT.Tag.Get("json")
-		if key == "" {
-			key = fieldT.Name
-		}
-
-		vals, ok := values[key]
-		if !ok {
-			continue
-		}
-
-		switch fieldV.Interface().(type) {
-		case bool, *bool:
-			var v bool
-			if strings.ToLower(vals[0]) == "true" || vals[0] == "1" {
-				v = true
-			} else {
-				v = false
-			}
-			if fieldV.Kind() == reflect.Ptr {
-				fieldV.Set(reflect.ValueOf(&v))
-			} else {
-				fieldV.Set(reflect.ValueOf(v))
-			}
-		case string, *string:
-			if fieldV.Kind() == reflect.Ptr {
-				fieldV.Set(reflect.ValueOf(&vals[0]))
-			} else {
-				fieldV.Set(reflect.ValueOf(vals[0]))
-			}
-		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, *int, *int8, *int16, *int32, *int64, *uint, *uint8, *uint16, *uint32, *uint64:
-			if valInt, err := strconv.Atoi(vals[0]); err != nil {
-				errList[key] = te.XError{Code: key, Message: err.Error(), ExpectedVal: vals[0], GivenVal: fieldV.Interface()}
-			} else {
-				fieldV.Set(h.IntToVal(valInt, fieldV))
-			}
-		case float64, *float64:
-			strFloat, err := strconv.ParseFloat(vals[0], 64)
-			if err != nil {
-				errList[key] = te.XError{Code: key, Message: err.Error(), ExpectedVal: vals[0], GivenVal: fieldV.Interface()}
-			}
-			if fieldV.Kind() == reflect.Ptr {
-				fieldV.Set(reflect.ValueOf(&strFloat))
-			} else {
-				fieldV.Set(reflect.ValueOf(strFloat))
-			}
-		case float32, *float32:
-			strFloat, err := strconv.ParseFloat(vals[0], 32)
-			if err != nil {
-				errList[key] = te.XError{Code: key, Message: err.Error(), ExpectedVal: vals[0], GivenVal: fieldV.Interface()}
-			}
-			strFloat32 := float32(strFloat)
-			if fieldV.Kind() == reflect.Ptr {
-				fieldV.Set(reflect.ValueOf(&strFloat32))
-			} else {
-				fieldV.Set(reflect.ValueOf(strFloat32))
-			}
-		case []string, *[]string:
-			fieldV.Set(reflect.ValueOf(&vals))
-		case datatypes.Date, *datatypes.Date:
-			time, err := time.Parse("2006-01-02T15:04:05.000Z", vals[0])
-			if err != nil {
-				errList[key] = te.XError{Code: key, Message: err.Error(), ExpectedVal: vals[0], GivenVal: fieldV.Interface()}
-			}
-			date := datatypes.Date(time)
-			if fieldV.Kind() == reflect.Ptr {
-				fieldV.Set(reflect.ValueOf(&date))
-			} else {
-				fieldV.Set(reflect.ValueOf(date))
-			}
-		case time.Time, *time.Time:
-			time, err := time.Parse("2006-01-02T15:04:05.000Z", vals[0])
-			if err != nil {
-				errList[key] = te.XError{Code: key, Message: err.Error(), ExpectedVal: vals[0], GivenVal: fieldV.Interface()}
-			}
-			if fieldV.Kind() == reflect.Ptr {
-				fieldV.Set(reflect.ValueOf(&time))
-			} else {
-				fieldV.Set(reflect.ValueOf(time))
-			}
-		// TODO: make any *[]int as a function
-		case *[]int8:
-			failed := false
-			valX := []int8{}
-			for _, val := range vals {
-				if valInt, err := strconv.Atoi(val); err != nil {
-					failed = true
-					errList[key] = te.XError{Code: key, Message: err.Error(), ExpectedVal: vals[0], GivenVal: fieldV.Interface()}
-				} else {
-					valX = append(valX, int8(valInt))
-				}
-			}
-			if !failed {
-				fieldV.Set(reflect.ValueOf(valX))
-			}
-			// case []int16:
-			// 	failed := false
-			// 	valX := []int16{}
-			// 	for _, val := range vals {
-			// 		if valInt, err := strconv.Atoi(val); err != nil {
-			// 			failed = true
-			// 			errList[key] = t.Error{err.Error(), key, val, fieldV.Interface()}
-			// 		} else {
-			// 			valX = append(valX, int16(valInt))
-			// 		}
-			// 	}
-			// 	if !failed {
-			// 		fieldV.Set(reflect.ValueOf(valX))
-			// 	}
-			// case []int32:
-			// 	failed := false
-			// 	valX := []int32{}
-			// 	for _, val := range vals {
-			// 		if valInt, err := strconv.Atoi(val); err != nil {
-			// 			failed = true
-			// 			errList[key] = t.Error{err.Error(), key, val, fieldV.Interface()}
-			// 		} else {
-			// 			valX = append(valX, int32(valInt))
-			// 		}
-			// 	}
-			// 	if !failed {
-			// 		fieldV.Set(reflect.ValueOf(valX))
-			// 	}
-			// case []int64:
-			// 	failed := false
-			// 	valX := []int64{}
-			// 	for _, val := range vals {
-			// 		if valInt, err := strconv.Atoi(val); err != nil {
-			// 			failed = true
-			// 			errList[key] = t.Error{err.Error(), key, val, fieldV.Interface()}
-			// 		} else {
-			// 			valX = append(valX, int64(valInt))
-			// 		}
-			// 	}
-			// 	if !failed {
-			// 		fieldV.Set(reflect.ValueOf(valX))
-			// 	}
-		}
-	}
-
-	if len(errList) > 0 {
-		return errList
+func ValidateURL(container any, input url.URL) error {
+	err := s.QueryParamFromUrl(container, input)
+	if err != nil {
+		return te.XErrors{"payload-bad": err.(te.XError)}
 	}
 
 	return Validate(container)
