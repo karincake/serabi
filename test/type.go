@@ -27,10 +27,18 @@ type DataSmallComplexNumber struct {
 
 type DataMediumSimple struct {
 	Name    string `validate:"alphaSpace"`
-	Address string `validate:"maxlength=50"`
+	Address string `validate:"minLength=10"`
 	Age     uint8  `validate:"gt=15"`
 	Email   string `validate:"required"`
 	Phone   string `validate:"numeric"`
+}
+
+type DataMediumSimpleField struct {
+	Name        string `validate:"alpha"`
+	Password    string `validate:"minLength=8"`
+	RePassword  string `validate:"eqField=Password"`
+	Age         int    `validate:"gt=10"`
+	YearsActive int    `validate:"ltField=Age"`
 }
 
 type DataMediumComplex struct {
