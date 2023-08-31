@@ -9,7 +9,7 @@ var Errors map[string]error = make(map[string]error)
 func init() {
 	Errors["parsing-fail"] = errors.New("parsing failed for %v, error: %v")
 	Errors["required"] = errors.New("value is required")
-	Errors["eq"] = errors.New("must be the same with")
+	Errors["eq"] = errors.New("must be the same with excpected value")
 	Errors["gt"] = errors.New("must be greater than the limit")
 	Errors["gte"] = errors.New("must be greater than or equal to the limit")
 	Errors["lt"] = errors.New("must be less than the limit")

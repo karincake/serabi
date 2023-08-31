@@ -17,7 +17,7 @@ func init() {
 	AddTag("gte", gteTagValidator)
 	AddTag("lt", ltTagValidator)
 	AddTag("lte", lteTagValidator)
-	AddTag("length", minLengthTagValidator)
+	AddTag("length", lengthTagValidator)
 	AddTag("minLength", minLengthTagValidator)
 	AddTag("maxLength", maxLengthTagValidator)
 }
@@ -25,14 +25,27 @@ func init() {
 // /// Field checkers
 func requiredTagValidator(val reflect.Value, expectVal string) error {
 	kind := val.Kind()
-	if (kind == reflect.String && val.String() == "") || (kind == reflect.Ptr && val.IsNil()) {
+	if kind == reflect.Ptr && val.IsNil() {
 		return Errors["required"]
-	} else if kind >= reflect.Int && kind <= reflect.Int64 && expectVal != "allowzero" && val.Int() == 0 {
+	} else if kind == reflect.String && val.String() == "" {
 		return Errors["required"]
-	} else if kind >= reflect.Uint && kind <= reflect.Uint64 && expectVal != "allowzero" && val.Uint() == 0 {
+	} else if kind >= reflect.Int && kind <= reflect.Int64 && expectVal != "allowZero" && val.Int() == 0 {
 		return Errors["required"]
-	} else if kind >= reflect.Float32 && kind <= reflect.Float64 && expectVal != "allowzero" && val.Float() == 0 {
+	} else if kind >= reflect.Uint && kind <= reflect.Uint64 && expectVal != "allowZero" && val.Uint() == 0 {
 		return Errors["required"]
+	} else if kind >= reflect.Float32 && kind <= reflect.Float64 && expectVal != "allowZero" && val.Float() == 0 {
+		return Errors["required"]
+	}
+	return nil
+}
+
+func eqTagValidator(val reflect.Value, expectVal string) error {
+	if val.Kind() == reflect.Pointer && val.IsNil() {
+		return nil
+	}
+
+	if val.String() != expectVal {
+		return Errors["eq"]
 	}
 	return nil
 }
@@ -42,7 +55,6 @@ func gtTagValidator(val reflect.Value, expectVal string) error {
 		return nil
 	}
 
-	resourceToNumval(val, expectVal, "<")
 	val1, val2, err := resourceToNumval(val, expectVal, "<")
 	if err != nil {
 		return err
@@ -94,6 +106,21 @@ func lteTagValidator(val reflect.Value, expectVal string) error {
 	return nil
 }
 
+func lengthTagValidator(val reflect.Value, expectVal string) error {
+	if val.Kind() == reflect.Pointer && val.IsNil() {
+		return nil
+	}
+	opts0Int, err := strconv.Atoi(expectVal)
+	if err != nil {
+		panic(Errors["numeric"])
+	}
+
+	valC := h.ValStringer(val) // value converted
+	if len(valC) != opts0Int {
+		return Errors["minLength"]
+	}
+	return nil
+}
 func minLengthTagValidator(val reflect.Value, expectVal string) error {
 	if val.Kind() == reflect.Pointer && val.IsNil() {
 		return nil
