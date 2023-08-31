@@ -106,7 +106,6 @@ func Validate(input any, nameSpaces ...string) error {
 				continue
 			}
 
-			rc.tag = append(rc.tag, rc.fieldT[i].Tag.Get(tagName))
 			if rc.tag[i] != "" {
 				rc.parsedTag = append(rc.parsedTag, parseTag(rc.tag[i]))
 				// based on slice or not
@@ -164,7 +163,7 @@ func Validate(input any, nameSpaces ...string) error {
 				if rc.fieldT[i].Anonymous {
 					embeddedMode = "(embedded)"
 				}
-				errList.Import(Validate(fieldV.Interface(), keyOrJsonTag(rc.fieldT[i].Name, rc.fieldT[i].Tag.Get("json")), embeddedMode).(te.XErrors))
+				errList.Import(Validate(fieldV.Interface(), rc.key[i], embeddedMode).(te.XErrors))
 				continue
 			}
 
@@ -269,21 +268,9 @@ func Validate(input any, nameSpaces ...string) error {
 	return nil
 }
 
-// Validation for IO Reader to help validate, for example, payload of http request
-func ValidateIoReader(container any, input io.Reader) error {
-	err := s.JsonFromIOReader(container, input)
-	if err != nil {
-		return te.XErrors{"payload-bad": err.(te.XError)}
-	}
-
-	// same process with normal validation
-	return Validate(container)
-}
-
 // Validation for form-data
 func ValidateFormData(container any, input *http.Request) error {
-	err := s.FormDataFromHttp(container, input)
-	fmt.Println(err)
+	err := s.HttpFormData(container, input)
 	if err != nil {
 		return te.XErrors{"payload-bad": err.(te.XError)}
 	}
@@ -294,11 +281,22 @@ func ValidateFormData(container any, input *http.Request) error {
 // Validation for url
 // caveat: url's structure makes it impossible to do deep parsing
 func ValidateURL(container any, input url.URL) error {
-	err := s.QueryParamFromUrl(container, input)
+	err := s.UrlQueryParam(container, input)
 	if err != nil {
 		return te.XErrors{"payload-bad": err.(te.XError)}
 	}
 
+	return Validate(container)
+}
+
+// Validation for IO Reader to help validate, for example, payload of http request
+func ValidateIoReader(container any, input io.Reader) error {
+	err := s.IOReaderJson(container, input)
+	if err != nil {
+		return te.XErrors{"payload-bad": err.(te.XError)}
+	}
+
+	// same process with normal validation
 	return Validate(container)
 }
 
