@@ -47,9 +47,13 @@ func checkParsedTag(parent *reflect.Value, parsedTag []keyVal, fv reflect.Value,
 					break
 				}
 			} else if localFvType == FVTField {
+				expVal := kv.Val
+				if kv.Val != "" {
+					expVal = kv.Key + "(" + kv.Val + ")"
+				}
 				err := tagFVs[kv.Key].FvFunc(fv, h.ValStringer(parent.FieldByName(kv.Val)))
 				if err != nil {
-					el[key] = te.XError{Code: kv.Key, Message: err.Error(), ExpectedVal: kv.Val, GivenVal: fv.Interface()}
+					el[key] = te.XError{Code: kv.Key, Message: err.Error(), ExpectedVal: expVal, GivenVal: fv.Interface()}
 					break
 				}
 			} else if localFvType == FVTRegex {
