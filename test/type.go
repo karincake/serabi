@@ -21,6 +21,10 @@ type DataSmallComplexString struct {
 	Name string `validate:"required;alphaSpace"`
 }
 
+type DataSmallComplexArrayofString struct {
+	Data []string `validate:"required;minLength=5"`
+}
+
 type DataSmallComplexNumber struct {
 	Age uint8 `validate:"required;gt=5;lt=15"`
 }
@@ -31,6 +35,10 @@ type DataMediumSimple struct {
 	Age     uint8  `validate:"gt=15"`
 	Email   string `validate:"required"`
 	Phone   string `validate:"numeric"`
+}
+
+type DataMediumSimpleArrayofStruct struct {
+	Data []DataMediumSimple `validate:"required"`
 }
 
 type DataMediumSimpleField struct {

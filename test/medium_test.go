@@ -56,6 +56,70 @@ func TestMediumSimpleFieldSuccess(t *testing.T) {
 	}
 }
 
+func TestSmallComplexArrayofStringSuccess(t *testing.T) {
+	// should gives 5 errors
+	data := DataSmallComplexArrayofString{
+		Data: []string{
+			"Santo",
+			"Sembodo",
+			"Beras",
+		},
+	}
+
+	err := s.Validate(data)
+	if err != nil {
+		xerr := err.(te.XErrors)
+		if len(xerr) != 0 {
+			t.Error("failed to parse request: \n", err)
+		}
+	}
+
+	// used tot test cache if it's enabled
+	err = s.Validate(data)
+	if err != nil {
+		xerr := err.(te.XErrors)
+		if len(xerr) != 0 {
+			t.Error("failed to parse request: \n", err)
+		}
+	}
+}
+
+func TestMediumSimpleArrayofStructSuccess(t *testing.T) {
+	// should gives 5 errors
+	data := DataMediumSimpleArrayofStruct{
+		Data: []DataMediumSimple{
+			{
+				Name:    "Santo Sembodo Beras",
+				Address: "Jl Localhost 2023",
+				Age:     19,
+				Email:   "test@example.com",
+			},
+			{
+				Name:    "Santo Sembodo Beras",
+				Address: "Jl Localhost 2023",
+				Age:     19,
+				Email:   "test@example.com",
+			},
+		},
+	}
+
+	err := s.Validate(data)
+	if err != nil {
+		xerr := err.(te.XErrors)
+		if len(xerr) != 0 {
+			t.Error("failed to parse request: \n", err)
+		}
+	}
+
+	// used tot test cache if it's enabled
+	if err != nil {
+		xerr := err.(te.XErrors)
+		if len(xerr) != 0 {
+			t.Error("failed to parse request: \n", err)
+		}
+	}
+}
+
 func TestMediumSimpleFieldFail(t *testing.T) {
 	// should gives 5 errors
 	data := DataMediumSimpleField{
