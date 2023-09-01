@@ -272,7 +272,7 @@ func Validate(input any, nameSpaces ...string) error {
 func ValidateFormData(container any, input *http.Request) error {
 	err := s.HttpFormData(container, input)
 	if err != nil {
-		return te.XErrors{"payload-bad": err.(te.XError)}
+		return err.(te.XErrors)
 	}
 
 	return Validate(container)
@@ -283,7 +283,7 @@ func ValidateFormData(container any, input *http.Request) error {
 func ValidateURL(container any, input url.URL) error {
 	err := s.UrlQueryParam(container, input)
 	if err != nil {
-		return te.XErrors{"payload-bad": err.(te.XError)}
+		return err.(te.XErrors)
 	}
 
 	return Validate(container)
@@ -293,7 +293,7 @@ func ValidateURL(container any, input url.URL) error {
 func ValidateIoReader(container any, input io.Reader) error {
 	err := s.IOReaderJson(container, input)
 	if err != nil {
-		return te.XErrors{"payload-bad": err.(te.XError)}
+		return err.(te.XError)
 	}
 
 	// same process with normal validation
