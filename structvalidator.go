@@ -3,7 +3,6 @@ package serabi
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -12,8 +11,6 @@ import (
 
 	s "github.com/karincake/semprit"
 	te "github.com/karincake/tempe/error"
-
-	h "github.com/karincake/serabi/helper"
 )
 
 // viladator func interface?
@@ -110,32 +107,7 @@ func Validate(input any, nameSpaces ...string) error {
 				rc.parsedTag = append(rc.parsedTag, parseTag(rc.tag[i]))
 				// based on slice or not
 				if fieldV.Kind() == reflect.Slice {
-					// special case untuk required
-					required := false
-					for _, v := range rc.parsedTag[i] {
-						if string(v.Key) == "required" {
-							required = true
-							break
-						}
-					}
-					// empty array
-					if fieldV.Len() == 0 {
-						if required {
-							errList[nameSpace+rc.key[i]] = te.XError{Code: "required", Message: ErrMessage["required"], GivenVal: fieldV.Interface().(string)}
-						}
-						continue
-					}
-					// loop
-					if fieldV.Index(0).Kind() == reflect.Struct {
-						for ix := 0; ix < fieldV.Len(); ix++ {
-							errList.Import(Validate(fieldV.Index(ix).Interface(), fmt.Sprintf("%v[%v]", rc.key[i], ix)).(te.XErrors))
-						}
-					} else {
-						for ix := 0; ix < fieldV.Len(); ix++ {
-							// fv :=
-							checkParsedTag(&inputV, rc.parsedTag[i], fieldV.Index(ix), errList, fmt.Sprintf("%v[%v]", rc.key[i], ix))
-						}
-					}
+					checkSliceField(&inputV, rc.parsedTag[i], fieldV, nameSpace, rc.key[i], errList)
 				} else {
 					// non slice
 					checkParsedTag(&inputV, rc.parsedTag[i], fieldV, errList, nameSpace+rc.key[i])
@@ -170,32 +142,7 @@ func Validate(input any, nameSpaces ...string) error {
 			if rc.tag[i] != "" {
 				// based on slice or not
 				if fieldV.Kind() == reflect.Slice {
-					// special case untuk required
-					required := false
-					for _, v := range rc.parsedTag[i] {
-						if string(v.Key) == "required" {
-							required = true
-							break
-						}
-					}
-					// empty array
-					if fieldV.Len() == 0 {
-						if required {
-							errList[nameSpace+rc.key[i]] = te.XError{Code: "required", Message: ErrMessage["required"], GivenVal: h.ValStringer(fieldV)}
-						}
-						continue
-					}
-					// loop
-					if fieldV.Index(0).Kind() == reflect.Struct {
-						for ix := 0; ix < fieldV.Len(); ix++ {
-							errList.Import(Validate(fieldV.Index(ix).Interface(), fmt.Sprintf("%v[%v]", rc.key, ix)).(te.XErrors))
-						}
-					} else {
-						for ix := 0; ix < fieldV.Len(); ix++ {
-							// fv := fieldV.Index(ix)
-							checkParsedTag(&inputV, rc.parsedTag[i], fieldV.Index(ix), errList, fmt.Sprintf("%v[%v]", rc.key, ix))
-						}
-					}
+					checkSliceField(&inputV, rc.parsedTag[i], fieldV, nameSpace, rc.key[i], errList)
 				} else {
 					// non slice
 					checkParsedTag(&inputV, rc.parsedTag[i], fieldV, errList, nameSpace+rc.key[i])
@@ -233,27 +180,7 @@ func Validate(input any, nameSpaces ...string) error {
 				parsedTag := parseTag(tag)
 				// based on slice or not
 				if fieldV.Kind() == reflect.Slice {
-					// special case untuk required
-					for _, v := range parsedTag {
-						if string(v.Key) == "required" && fieldV.Len() == 0 {
-							errList[nameSpace+key] = te.XError{Code: "required", Message: ErrMessage["required"], GivenVal: fieldV.Interface().(string)}
-							break
-						}
-					}
-					// empty array
-					if fieldV.Len() == 0 {
-						continue
-					}
-					// loop
-					if fieldV.Index(0).Kind() == reflect.Struct {
-						for ix := 0; ix < fieldV.Len(); ix++ {
-							errList.Import(Validate(fieldV.Index(ix).Interface(), fmt.Sprintf("%v[%v]", key, ix)).(te.XErrors))
-						}
-					} else {
-						for ix := 0; ix < fieldV.Len(); ix++ {
-							checkParsedTag(&inputV, parsedTag, fieldV.Index(ix), errList, fmt.Sprintf("%v[%v]", key, ix))
-						}
-					}
+					checkSliceField(&inputV, parsedTag, fieldV, nameSpace, key, errList)
 				} else {
 					// non slice
 					checkParsedTag(&inputV, parsedTag, fieldV, errList, nameSpace+key)

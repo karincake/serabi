@@ -2,6 +2,7 @@ package serabi
 
 import (
 	"reflect"
+	"strconv"
 
 	h "github.com/karincake/serabi/helper"
 	te "github.com/karincake/tempe/error"
@@ -63,6 +64,39 @@ func checkParsedTag(parent *reflect.Value, parsedTag []keyVal, fv reflect.Value,
 					break
 				}
 			}
+		}
+	}
+}
+
+// check slice field
+func checkSliceField(parent *reflect.Value, pt []keyVal, fv reflect.Value, nameSpace, key string, el te.XErrors) {
+	// special case untuk required
+	required := false
+	for _, v := range pt {
+		if string(v.Key) == "required" {
+			required = true
+			break
+		}
+	}
+	// empty array
+	if fv.Len() == 0 {
+		if required {
+			el[nameSpace+key] = te.XError{Code: "required", Message: ErrMessage["required"], GivenVal: fv.Interface().(string)}
+		}
+		return
+	}
+	// loop
+	if fv.Index(0).Kind() == reflect.Struct {
+		for ix := 0; ix < fv.Len(); ix++ {
+			err := Validate(fv.Index(ix).Interface(), key+"["+strconv.Itoa(ix)+"]")
+			if err != nil {
+				el.Import(err.(te.XErrors))
+			}
+		}
+	} else {
+		for ix := 0; ix < fv.Len(); ix++ {
+			// fv :=
+			checkParsedTag(&fv, pt, fv.Index(ix), el, key+"["+strconv.Itoa(ix)+"]")
 		}
 	}
 }
