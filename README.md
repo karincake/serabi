@@ -131,3 +131,7 @@ The Identifier Regex (identifierregex, needs to import the side effectmanually)
 |uuid3Rfc4122|UUID v3 RFC4122|
 |uuid4Rfc4122|UUID v4 RFC4122|
 |uuid5Rfc4122|UUID v5 RFC4122|
+
+## Options
+- `CacheEnabled bool`, to cache the field identification results. The default value is `false`. When set to `true`, the feature can boost the performance up to 2-3 times faster.
+- `CacheMaxCount int`, to limit the number of strcuts that can be cached. The default value is `5`.
