@@ -26,12 +26,38 @@ if err != nil {
 }
 ```
 
-Usage of the Validation Tag
+## Available Functions
+### Main Function
+- `Validate(input any)` to fill validate a struct.
 
-In case the data is empty and want to be filled from some sources, there are helper function than can be used with the task.
-- `serabi.ValidateFormData(&any, *http.Request)` to fill data with content of HTTP Form Data
-- `serabi.ValidateURL(&any, url.URL)` to fill data with content of URL
-- `serabi.ValidateURL(&any, io.Reader)` to fill data with content of IoReader (with content of JSON format)
+### Wrapper Function 
+The following functions are to help filling a struct (see semprit, https://github.com/karincake/semprit) before validating them:
+- `ValidateFormData(container any, *http.Request)` to fill data with content of HTTP Form Data and then validate the struct
+- `ValidateURL(container any, url.URL)` to fill data with content of URL and then validate the struct
+- `ValidateURL(container any, io.Reader)` to fill data with content of IoReader (with content of JSON format) and then validate the struct
+
+Due to its function to fill an object, make sure to use pointer of object for the first parameter.
+
+### Helper Function
+- `AddTag(tag string, f FvFunc)`, to register a field-validator
+- `AddTagForField(tag string, f FvFunc)`, to register a field-validator that is comparing with another field
+- `AddTagForRegex(tag string, regexString string, message string)`, to register field-validator that uses regex string
+- `RemoveTag(tag string)`, to remove a field-validator
+
+## Types
+- `FvFunc func(reflect.Value, string) error`, function type that defines a validation. First parameter is for field value, second parameter is for validation rule
+
+## Tag Validation Format
+How to write validation tag:
+- Tag name is `validate`.
+- The value can have multiple validation rules, separated by semicolon (;).
+- A validation rule is a key-value pair separated by equals sign (=)
+- A field comparison validator uses rule's value to determine which field to compare
+
+Examples:
+- `validate="required"`, one rule
+- `validate="required;minLength=10"`, multiple rules
+- `validate="required;eqField=Password"`, multiple rules, with one of it is a field comparison validation
 
 ## Available Validation
 The Basic Validation (included)
@@ -71,7 +97,7 @@ The main package includes only very basic and common validations. Some validatio
 
 `import _ github.com/karincake/serabi/encodingregex`
 
-The Cryptography Regex (cryptographyregex, needs to import manually)
+The Cryptography Regex (cryptographyregex, needs to import the side effect manually)
 |Code|Description|
 |---|---|
 |md4||
@@ -85,7 +111,7 @@ The Cryptography Regex (cryptographyregex, needs to import manually)
 |tiger160||
 |tiger192||
 
-The Encoding (encodingregex, needs to import manually)
+The Encoding (encodingregex, needs to import the side effect manually)
 |---|---|
 |base64|Base64 String|
 |base64URL|Base64URL String|
@@ -93,7 +119,7 @@ The Encoding (encodingregex, needs to import manually)
 |url|URL String|
 |html|HTML Encoded|
 
-The Identifier Regex (identifierregex, needs to import manually)
+The Identifier Regex (identifierregex, needs to import the side effectmanually)
 |---|---|
 |uuid|UUID format|
 |uuid3|UUID v3 format|

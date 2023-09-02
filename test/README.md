@@ -1,7 +1,7 @@
 # Testing
 
 ## Data Type
-There are several structs that are being tested with some parts of the name indicating their characteristics. The struct name uses the following format:
+There are several structs available for testing. Struct name format is used to indicate their characteristics with following format:
 
 `Data(Size)(Complexity)[OptionalInfo]`
 
