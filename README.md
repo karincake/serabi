@@ -100,18 +100,19 @@ The main package includes only very basic and common validations. Some validatio
 The Cryptography Regex (cryptographyregex, needs to import the side effect manually)
 |Code|Description|
 |---|---|
-|md4||
-|md5||
-|sha256||
-|sha384||
-|sha512||
-|ripemd128||
-|ripemd160||
-|tiger128||
-|tiger160||
-|tiger192||
+|md4|MD4 hash|
+|md5|MD5 hash|
+|sha256|SHA256 hash|
+|sha384|SHA384 hash|
+|sha512|SHA512 hash|
+|ripemd128|RIPEMD-128 hash|
+|ripemd160|RIPEMD-160 hash|
+|tiger128|TIGER128 hash|
+|tiger160|TIGER160 hash|
+|tiger192|TIGER192 hash|
 
 The Encoding (encodingregex, needs to import the side effect manually)
+|Code|Description|
 |---|---|
 |base64|Base64 String|
 |base64URL|Base64URL String|
@@ -120,6 +121,7 @@ The Encoding (encodingregex, needs to import the side effect manually)
 |html|HTML Encoded|
 
 The Identifier Regex (identifierregex, needs to import the side effectmanually)
+|Code|Description|
 |---|---|
 |uuid|UUID format|
 |uuid3|UUID v3 format|
