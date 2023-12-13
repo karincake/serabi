@@ -169,7 +169,10 @@ func Validate(input any, nameSpaces ...string) error {
 				if fieldT.Anonymous {
 					embeddedMode = "(embedded)"
 				}
-				errList.Import(Validate(fieldV.Interface(), keyOrJsonTag(fieldT.Name, fieldT.Tag.Get("json")), embeddedMode).(te.XErrors))
+				err := Validate(fieldV.Interface(), keyOrJsonTag(fieldT.Name, fieldT.Tag.Get("json")), embeddedMode)
+				if err != nil {
+					errList.Import(err.(te.XErrors))
+				}
 				continue
 			}
 
