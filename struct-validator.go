@@ -68,7 +68,7 @@ func Validate(input any, nameSpaces ...string) error {
 	errList := d.FieldErrors{}
 
 	// check cache
-	className := inputT.Name()
+	className := inputT.PkgPath() + "/" + inputT.Name()
 	if CacheEnabled && !cache.classExists(className) {
 		rc := registeredClass{
 			inputVNFC: inputV.NumField(),

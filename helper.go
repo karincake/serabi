@@ -1,6 +1,7 @@
 package serabi
 
 import (
+	"fmt"
 	"reflect"
 	"strconv"
 
@@ -82,6 +83,8 @@ func checkParsedTag(parent *reflect.Value, parsedTag []keyVal, fv reflect.Value,
 					break
 				}
 			}
+		} else {
+			panic(fmt.Sprintf("unregistered tag found '%v'", kv.Key))
 		}
 	}
 }
@@ -96,8 +99,10 @@ func checkSliceField(pt []keyVal, fv reflect.Value, nameSpace, key string, el d.
 			break
 		}
 	}
+
 	// empty array
-	if fv.Len() == 0 {
+	fvLength := fv.Len()
+	if fvLength == 0 {
 		if required {
 			fvV := reflect.ValueOf(fv.Interface())
 			fvVKind := fvV.Kind()
@@ -109,17 +114,36 @@ func checkSliceField(pt []keyVal, fv reflect.Value, nameSpace, key string, el d.
 		}
 		return
 	}
+
+	// check first element
+	fvZero := fv.Index(0)
+	for fvZero.Kind() == reflect.Pointer || fvZero.Kind() == reflect.Interface {
+		fvZero = fvZero.Elem()
+	}
+	if fvZero.Kind() != reflect.Struct {
+		return
+	}
+
 	// loop
-	if fv.Index(0).Kind() == reflect.Struct {
-		for ix := 0; ix < fv.Len(); ix++ {
-			err := Validate(fv.Index(ix).Interface(), key+"["+strconv.Itoa(ix)+"]")
+	if fvZero.Kind() == reflect.Struct {
+		for ix := 0; ix < fvLength; ix++ {
+			// cek each element
+			fvIx := fv.Index(0)
+			for fvIx.Kind() == reflect.Pointer || fvIx.Kind() == reflect.Interface {
+				fvIx = fvIx.Elem()
+			}
+			if fvIx.Kind() != reflect.Struct {
+				return
+			}
+
+			// validate
+			err := Validate(fvIx.Interface(), key+"["+strconv.Itoa(ix)+"]")
 			if err != nil {
 				el.Import(err.(d.FieldErrors))
 			}
 		}
 	} else {
 		for ix := 0; ix < fv.Len(); ix++ {
-			// fv :=
 			checkParsedTag(&fv, pt, fv.Index(ix), el, key+"["+strconv.Itoa(ix)+"]", "")
 		}
 	}
