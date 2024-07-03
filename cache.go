@@ -18,7 +18,6 @@ type registeredClass struct {
 	key        []string
 	typeString []string
 	parsedTag  [][]keyVal
-	tagNames   []string
 	next       *registeredClass
 }
 
@@ -43,19 +42,6 @@ func (obj *registeredClassList) push(n string, rc registeredClass) {
 	}
 
 	curr.next = newNode
-}
-
-func (obj *registeredClassList) shift() {
-	if obj.head == nil {
-		return
-	}
-
-	if obj.head.next != nil {
-		obj.head = obj.head.next
-	} else {
-		obj.head = nil
-	}
-
 }
 
 func (obj *registeredClassList) classExists(n string) bool {
