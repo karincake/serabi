@@ -140,7 +140,8 @@ func minLengthTagValidator(val reflect.Value, expectVal string) error {
 	}
 
 	valC := h.ValStringer(val) // value converted
-	if len(valC) < opts0Int {
+	length := len(valC)
+	if length != 0 && length < opts0Int {
 		return Errors["minLength"]
 	}
 	return nil
@@ -156,6 +157,10 @@ func maxLengthTagValidator(val reflect.Value, expectVal string) error {
 	}
 
 	valC := h.ValStringer(val) // value converted
+	length := len(valC)
+	if length == 0 {
+		return nil
+	}
 	if len(valC) > opts0Int {
 		return Errors["maxLength"]
 	}
