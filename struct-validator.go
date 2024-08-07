@@ -56,11 +56,11 @@ func Validate(input any, nameSpaces ...string) error {
 	nameSpace := ""
 	eNameSpace := ""
 	if len(nameSpaces) > 0 {
-		if len(nameSpaces) > 1 && nameSpaces[1] != "" {
-			eNameSpace = nameSpaces[0]
-		} else {
-			nameSpace += nameSpaces[0] + "."
-		}
+		// if len(nameSpaces) > 1 && nameSpaces[1] != "" {
+		// 	eNameSpace = nameSpaces[0]
+		// } else {
+		nameSpace += nameSpaces[0]
+		// }
 	}
 
 	// get the type
@@ -92,11 +92,21 @@ func Validate(input any, nameSpaces ...string) error {
 			// if current field is struct, validate again
 			rc.typeString = append(rc.typeString, rc.fieldT[i].Type.String())
 			if (rc.fieldT[i].Type.Kind() == reflect.Struct) && rc.typeString[i] != "time.Time" {
-				embeddedMode := ""
+				var err error
 				if rc.fieldT[i].Anonymous {
-					embeddedMode = "YES"
+					err = Validate(fieldV.Interface(), nameSpace+".")
+				} else {
+					err = Validate(fieldV.Interface(), nameSpace+rc.key[i])
 				}
-				errList.Import(Validate(fieldV.Interface(), rc.key[i], embeddedMode).(d.FieldErrors))
+				if err != nil {
+					errList.Import(err.(d.FieldErrors))
+				}
+
+				// embeddedMode := ""
+				// if rc.fieldT[i].Anonymous {
+				// 	embeddedMode = "YES"
+				// }
+				// errList.Import(Validate(fieldV.Interface(), rc.key[i], embeddedMode).(d.FieldErrors))
 				continue
 			}
 
@@ -128,11 +138,21 @@ func Validate(input any, nameSpaces ...string) error {
 
 			// if current field is struct, validate again
 			if (rc.fieldT[i].Type.Kind() == reflect.Struct) && rc.typeString[i] != "time.Time" {
-				embeddedMode := ""
+				var err error
 				if rc.fieldT[i].Anonymous {
-					embeddedMode = "YES"
+					err = Validate(fieldV.Interface(), nameSpace+".")
+				} else {
+					err = Validate(fieldV.Interface(), nameSpace+rc.key[i])
 				}
-				errList.Import(Validate(fieldV.Interface(), rc.key[i], embeddedMode).(d.FieldErrors))
+				if err != nil {
+					errList.Import(err.(d.FieldErrors))
+				}
+
+				// embeddedMode := ""
+				// if rc.fieldT[i].Anonymous {
+				// 	embeddedMode = "YES"
+				// }
+				// errList.Import(Validate(fieldV.Interface(), rc.key[i], embeddedMode).(d.FieldErrors))
 				continue
 			}
 
@@ -162,11 +182,12 @@ func Validate(input any, nameSpaces ...string) error {
 			// if current field is struct, validate again
 			typeString := fieldT.Type.String()
 			if (fieldT.Type.Kind() == reflect.Struct) && typeString != "time.Time" {
-				embeddedMode := ""
+				var err error
 				if fieldT.Anonymous {
-					embeddedMode = "YES"
+					err = Validate(fieldV.Interface(), nameSpace+".")
+				} else {
+					err = Validate(fieldV.Interface(), nameSpace+keyOrJsonTag(fieldT.Name, fieldT.Tag.Get("json")))
 				}
-				err := Validate(fieldV.Interface(), keyOrJsonTag(fieldT.Name, fieldT.Tag.Get("json")), embeddedMode)
 				if err != nil {
 					errList.Import(err.(d.FieldErrors))
 				}
@@ -179,7 +200,7 @@ func Validate(input any, nameSpaces ...string) error {
 				parsedTag := parseTag(tag)
 				// based on slice or not
 				if fieldV.Kind() == reflect.Slice {
-					checkSliceField(parsedTag, fieldV, nameSpace, key, errList) // &inputV,
+					checkSliceField(parsedTag, fieldV, nameSpace, nameSpace+key, errList) // &inputV,
 				} else {
 					// non slice
 					checkParsedTag(&inputV, parsedTag, fieldV, errList, nameSpace+key, eNameSpace)
