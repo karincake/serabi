@@ -59,7 +59,7 @@ func Validate(input any, nameSpaces ...string) error {
 		// if len(nameSpaces) > 1 && nameSpaces[1] != "" {
 		// 	eNameSpace = nameSpaces[0]
 		// } else {
-		nameSpace += nameSpaces[0]
+		nameSpace += nameSpaces[0] + "."
 		// }
 	}
 
@@ -94,7 +94,7 @@ func Validate(input any, nameSpaces ...string) error {
 			if (rc.fieldT[i].Type.Kind() == reflect.Struct) && rc.typeString[i] != "time.Time" {
 				var err error
 				if rc.fieldT[i].Anonymous {
-					err = Validate(fieldV.Interface(), nameSpace+".")
+					err = Validate(fieldV.Interface())
 				} else {
 					err = Validate(fieldV.Interface(), nameSpace+rc.key[i])
 				}
@@ -140,7 +140,7 @@ func Validate(input any, nameSpaces ...string) error {
 			if (rc.fieldT[i].Type.Kind() == reflect.Struct) && rc.typeString[i] != "time.Time" {
 				var err error
 				if rc.fieldT[i].Anonymous {
-					err = Validate(fieldV.Interface(), nameSpace+".")
+					err = Validate(fieldV.Interface())
 				} else {
 					err = Validate(fieldV.Interface(), nameSpace+rc.key[i])
 				}
@@ -184,7 +184,7 @@ func Validate(input any, nameSpaces ...string) error {
 			if (fieldT.Type.Kind() == reflect.Struct) && typeString != "time.Time" {
 				var err error
 				if fieldT.Anonymous {
-					err = Validate(fieldV.Interface(), nameSpace+".")
+					err = Validate(fieldV.Interface())
 				} else {
 					err = Validate(fieldV.Interface(), nameSpace+keyOrJsonTag(fieldT.Name, fieldT.Tag.Get("json")))
 				}
