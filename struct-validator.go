@@ -54,12 +54,16 @@ func Validate(input any, nameSpaces ...string) error {
 
 	// namespace will be available if it is sub validation
 	nameSpace := ""
+	nameSpaceDot := ""
 	eNameSpace := ""
 	if len(nameSpaces) > 0 {
 		// if len(nameSpaces) > 1 && nameSpaces[1] != "" {
 		// 	eNameSpace = nameSpaces[0]
 		// } else {
-		nameSpace += nameSpaces[0] + "."
+		nameSpace += nameSpaces[0]
+		if nameSpace != "" {
+			nameSpaceDot = nameSpace + "."
+		}
 		// }
 	}
 
@@ -96,7 +100,7 @@ func Validate(input any, nameSpaces ...string) error {
 				if rc.fieldT[i].Anonymous {
 					err = Validate(fieldV.Interface())
 				} else {
-					err = Validate(fieldV.Interface(), nameSpace+rc.key[i])
+					err = Validate(fieldV.Interface(), nameSpaceDot+rc.key[i])
 				}
 				if err != nil {
 					errList.Import(err.(d.FieldErrors))
@@ -117,7 +121,7 @@ func Validate(input any, nameSpaces ...string) error {
 					checkSliceField(rc.parsedTag[i], fieldV, nameSpace, rc.key[i], errList) // &inputV,
 				} else {
 					// non slice
-					checkParsedTag(&inputV, rc.parsedTag[i], fieldV, errList, nameSpace+rc.key[i], eNameSpace)
+					checkParsedTag(&inputV, rc.parsedTag[i], fieldV, errList, nameSpaceDot+rc.key[i], eNameSpace)
 				}
 			} else {
 				rc.parsedTag = append(rc.parsedTag, nil)
@@ -140,9 +144,9 @@ func Validate(input any, nameSpaces ...string) error {
 			if (rc.fieldT[i].Type.Kind() == reflect.Struct) && rc.typeString[i] != "time.Time" {
 				var err error
 				if rc.fieldT[i].Anonymous {
-					err = Validate(fieldV.Interface())
+					err = Validate(fieldV.Interface(), nameSpace)
 				} else {
-					err = Validate(fieldV.Interface(), nameSpace+rc.key[i])
+					err = Validate(fieldV.Interface(), nameSpaceDot+rc.key[i])
 				}
 				if err != nil {
 					errList.Import(err.(d.FieldErrors))
@@ -162,7 +166,7 @@ func Validate(input any, nameSpaces ...string) error {
 					checkSliceField(rc.parsedTag[i], fieldV, nameSpace, rc.key[i], errList) // &inputV,
 				} else {
 					// non slice
-					checkParsedTag(&inputV, rc.parsedTag[i], fieldV, errList, nameSpace+rc.key[i], eNameSpace)
+					checkParsedTag(&inputV, rc.parsedTag[i], fieldV, errList, nameSpaceDot+rc.key[i], eNameSpace)
 				}
 			}
 		}
@@ -181,12 +185,12 @@ func Validate(input any, nameSpaces ...string) error {
 
 			// if current field is struct, validate again
 			typeString := fieldT.Type.String()
-			if (fieldT.Type.Kind() == reflect.Struct) && typeString != "time.Time" {
+			if fieldT.Type.Kind() == reflect.Struct && typeString != "time.Time" {
 				var err error
 				if fieldT.Anonymous {
-					err = Validate(fieldV.Interface())
+					err = Validate(fieldV.Interface(), nameSpace)
 				} else {
-					err = Validate(fieldV.Interface(), nameSpace+keyOrJsonTag(fieldT.Name, fieldT.Tag.Get("json")))
+					err = Validate(fieldV.Interface(), nameSpaceDot+keyOrJsonTag(fieldT.Name, fieldT.Tag.Get("json")))
 				}
 				if err != nil {
 					errList.Import(err.(d.FieldErrors))
@@ -203,7 +207,7 @@ func Validate(input any, nameSpaces ...string) error {
 					checkSliceField(parsedTag, fieldV, nameSpace, nameSpace+key, errList) // &inputV,
 				} else {
 					// non slice
-					checkParsedTag(&inputV, parsedTag, fieldV, errList, nameSpace+key, eNameSpace)
+					checkParsedTag(&inputV, parsedTag, fieldV, errList, nameSpaceDot+key, eNameSpace)
 				}
 			}
 		}
