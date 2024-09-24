@@ -126,7 +126,7 @@ func lengthTagValidator(val reflect.Value, expectVal string) error {
 
 	valC := h.ValStringer(val) // value converted
 	if len(valC) != opts0Int {
-		return Errors["minLength"]
+		return Errors["length"]
 	}
 	return nil
 }

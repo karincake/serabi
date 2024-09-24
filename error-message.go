@@ -14,6 +14,7 @@ func init() {
 	Errors["gte"] = errors.New("must be greater than or equal to the limit")
 	Errors["lt"] = errors.New("must be less than the limit")
 	Errors["lte"] = errors.New("must be less than or equal to the limit")
+	Errors["length"] = errors.New("the characters length doesn't fit the rule")
 	Errors["minLength"] = errors.New("the characters length below the limit")
 	Errors["maxLength"] = errors.New("the characters length exceed the limit")
 	Errors["alpha"] = errors.New("must be alphabet")
