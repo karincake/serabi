@@ -34,7 +34,7 @@ func parseTag(tag string) []keyVal {
 }
 
 // parse tag using FvFunc
-func checkParsedTag(parent *reflect.Value, parsedTag []keyVal, fv reflect.Value, el d.FieldErrors, key, eNameSpace string) {
+func checkParsedTag(parent *reflect.Value, parsedTag []keyVal, fv reflect.Value, el d.FieldErrors, key, fieldName, eNameSpace string) {
 	for _, kv := range parsedTag {
 		if _, ok := tagFVs[kv.Key]; ok {
 			localFvType := tagFVs[kv.Key].FvType
@@ -46,6 +46,7 @@ func checkParsedTag(parent *reflect.Value, parsedTag []keyVal, fv reflect.Value,
 						expVal = kv.Key + "(" + kv.Val + ")"
 					}
 					el[key] = d.FieldError{
+						Source:      fieldName,
 						Code:        kv.Key,
 						Message:     err.Error() + " " + expVal,
 						ExpectedVal: expVal,
@@ -62,6 +63,7 @@ func checkParsedTag(parent *reflect.Value, parsedTag []keyVal, fv reflect.Value,
 						expVal = kv.Key + "(" + kv.Val + ")"
 					}
 					el[key] = d.FieldError{
+						Source:      fieldName,
 						Code:        kv.Key,
 						Message:     err.Error() + " " + expVal,
 						ExpectedVal: expVal,
@@ -144,7 +146,7 @@ func checkSliceField(pt []keyVal, fv reflect.Value, nameSpace, key string, el d.
 		}
 	} else {
 		for ix := 0; ix < fv.Len(); ix++ {
-			checkParsedTag(&fv, pt, fv.Index(ix), el, key+"["+strconv.Itoa(ix)+"]", "")
+			checkParsedTag(&fv, pt, fv.Index(ix), el, nameSpace+"["+strconv.Itoa(ix)+"]", key+"["+strconv.Itoa(ix)+"]", "")
 		}
 	}
 }

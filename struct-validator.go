@@ -121,7 +121,7 @@ func Validate(input any, nameSpaces ...string) error {
 					checkSliceField(rc.parsedTag[i], fieldV, nameSpace, rc.key[i], errList) // &inputV,
 				} else {
 					// non slice
-					checkParsedTag(&inputV, rc.parsedTag[i], fieldV, errList, nameSpaceDot+rc.key[i], eNameSpace)
+					checkParsedTag(&inputV, rc.parsedTag[i], fieldV, errList, nameSpaceDot+rc.key[i], rc.key[i], eNameSpace)
 				}
 			} else {
 				rc.parsedTag = append(rc.parsedTag, nil)
@@ -166,7 +166,7 @@ func Validate(input any, nameSpaces ...string) error {
 					checkSliceField(rc.parsedTag[i], fieldV, nameSpace, rc.key[i], errList) // &inputV,
 				} else {
 					// non slice
-					checkParsedTag(&inputV, rc.parsedTag[i], fieldV, errList, nameSpaceDot+rc.key[i], eNameSpace)
+					checkParsedTag(&inputV, rc.parsedTag[i], fieldV, errList, nameSpaceDot+rc.key[i], rc.key[i], eNameSpace)
 				}
 			}
 		}
@@ -207,7 +207,7 @@ func Validate(input any, nameSpaces ...string) error {
 					checkSliceField(parsedTag, fieldV, nameSpace, nameSpace+key, errList) // &inputV,
 				} else {
 					// non slice
-					checkParsedTag(&inputV, parsedTag, fieldV, errList, nameSpaceDot+key, eNameSpace)
+					checkParsedTag(&inputV, parsedTag, fieldV, errList, nameSpaceDot+key, key, eNameSpace)
 				}
 			}
 		}
