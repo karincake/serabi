@@ -5,6 +5,7 @@ package serabi
 // register the field checkers
 func init() {
 	AddTagForField("eqField", eqTagValidator)
+	AddTagForField("difField", difTagValidator)
 	AddTagForField("gtField", gtTagValidator)
 	AddTagForField("gteField", gteTagValidator)
 	AddTagForField("ltField", ltTagValidator)
