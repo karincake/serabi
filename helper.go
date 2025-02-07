@@ -43,7 +43,7 @@ func checkParsedTag(parent *reflect.Value, parsedTag []keyVal, fv reflect.Value,
 				if err != nil {
 					expVal := ""
 					if kv.Val != "" {
-						expVal = kv.Key + "(" + kv.Val + ")"
+						expVal = kv.Key + " (" + kv.Val + ")"
 					}
 					el[key] = d.FieldError{
 						Source:      fieldName,
@@ -56,11 +56,12 @@ func checkParsedTag(parent *reflect.Value, parsedTag []keyVal, fv reflect.Value,
 					break
 				}
 			} else if localFvType == FVTField {
-				err := tagFVs[kv.Key].FvFunc(fv, h.ValStringer(parent.FieldByName(kv.Val)))
+				val := h.ValStringer(parent.FieldByName(kv.Val))
+				err := tagFVs[kv.Key].FvFunc(fv, val)
 				if err != nil {
-					expVal := kv.Val
+					expVal := val
 					if kv.Val != "" {
-						expVal = kv.Key + "(" + kv.Val + ")"
+						expVal = kv.Val + "(" + expVal + ")"
 					}
 					el[key] = d.FieldError{
 						Source:      fieldName,

@@ -66,6 +66,10 @@ func IntToVal(input int, kind reflect.Value) reflect.Value {
 func ValStringer(val reflect.Value) string {
 	valK := val.Kind()
 	var valC string
+	if valK == reflect.Pointer {
+		val = val.Elem()
+		valK = val.Kind()
+	}
 	if valK == reflect.String {
 		valC = val.String()
 	} else if valK >= reflect.Int && valK < reflect.Uint64 {

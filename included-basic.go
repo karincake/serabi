@@ -59,6 +59,17 @@ func eqTagValidator(val reflect.Value, expectVal string) error {
 	return nil
 }
 
+func difTagValidator(val reflect.Value, expectVal string) error {
+	if val.Kind() == reflect.Pointer && val.IsNil() {
+		return nil
+	}
+
+	if val.String() == expectVal {
+		return Errors["dif"]
+	}
+	return nil
+}
+
 func gtTagValidator(val reflect.Value, expectVal string) error {
 	if val.Kind() == reflect.Pointer && val.IsNil() {
 		return nil
