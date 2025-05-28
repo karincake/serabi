@@ -24,10 +24,7 @@ func init() {
 
 // /// Field checkers
 func regexTagValidator(val reflect.Value, code string) error {
-	if val.Kind() == reflect.Pointer && val.IsNil() {
-		return nil
-	}
-	if val.String() == "" {
+	if (val.Kind() == reflect.Pointer && val.IsNil()) || val.String() == "" {
 		return nil
 	}
 
