@@ -127,7 +127,7 @@ func lteTagValidator(val reflect.Value, expectVal string) error {
 }
 
 func lengthTagValidator(val reflect.Value, expectVal string) error {
-	if val.Kind() == reflect.Pointer && val.IsNil() {
+	if val.Kind() == reflect.Pointer && val.IsNil() || val.Interface() == "" {
 		return nil
 	}
 	opts0Int, err := strconv.Atoi(expectVal)
@@ -142,7 +142,7 @@ func lengthTagValidator(val reflect.Value, expectVal string) error {
 	return nil
 }
 func minLengthTagValidator(val reflect.Value, expectVal string) error {
-	if val.Kind() == reflect.Pointer && val.IsNil() {
+	if val.Kind() == reflect.Pointer && val.IsNil() || val.Interface() == "" {
 		return nil
 	}
 	opts0Int, err := strconv.Atoi(expectVal)
@@ -159,7 +159,7 @@ func minLengthTagValidator(val reflect.Value, expectVal string) error {
 }
 
 func maxLengthTagValidator(val reflect.Value, expectVal string) error {
-	if val.Kind() == reflect.Pointer && val.IsNil() {
+	if val.Kind() == reflect.Pointer && val.IsNil() || val.Interface() == "" {
 		return nil
 	}
 	opts0Int, err := strconv.Atoi(expectVal)
