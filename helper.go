@@ -38,53 +38,25 @@ func checkParsedTag(parent *reflect.Value, parsedTag []keyVal, fv reflect.Value,
 	for _, kv := range parsedTag {
 		if _, ok := tagFVs[kv.Key]; ok {
 			localFvType := tagFVs[kv.Key].FvType
+			var err error
 			if localFvType == FVTBasic {
-				err := tagFVs[kv.Key].FvFunc(fv, kv.Val)
-				if err != nil {
-					expVal := ""
-					if kv.Val != "" {
-						expVal = kv.Key + " (" + kv.Val + ")"
-					}
-					el[key] = d.FieldError{
-						Source:      fieldName,
-						Code:        kv.Key,
-						Message:     err.Error() + " " + expVal,
-						ExpectedVal: expVal,
-						GivenVal:    fv.Interface(),
-						EmbedSource: eNameSpace,
-					}
-					break
-				}
+				err = tagFVs[kv.Key].FvFunc(fv, kv.Val)
 			} else if localFvType == FVTField {
 				val := h.ValStringer(parent.FieldByName(kv.Val))
-				err := tagFVs[kv.Key].FvFunc(fv, val)
-				if err != nil {
-					expVal := val
-					if kv.Val != "" {
-						expVal = kv.Val + "(" + expVal + ")"
-					}
-					el[key] = d.FieldError{
-						Source:      fieldName,
-						Code:        kv.Key,
-						Message:     err.Error() + " " + expVal,
-						ExpectedVal: expVal,
-						GivenVal:    fv.Interface(),
-						EmbedSource: eNameSpace,
-					}
-					break
-				}
+				err = tagFVs[kv.Key].FvFunc(fv, val)
 			} else if localFvType == FVTRegex {
-				err := tagFVs["regex"].FvFunc(fv, kv.Key)
-				if err != nil {
-					el[key] = d.FieldError{
-						Code:        kv.Key,
-						Message:     err.Error(),
-						ExpectedVal: kv.Key,
-						GivenVal:    fv.Interface(),
-						EmbedSource: eNameSpace,
-					}
-					break
+				err = tagFVs["regex"].FvFunc(fv, kv.Key)
+			}
+			if err != nil {
+				el[key] = d.FieldError{
+					Source:      fieldName,
+					Code:        kv.Key,
+					Message:     err.Error(),
+					ExpectedVal: kv.Val,
+					GivenVal:    fv.Interface(),
+					EmbedSource: eNameSpace,
 				}
+				break
 			}
 		} else {
 			panic(fmt.Sprintf("unregistered tag found '%v'", kv.Key))
