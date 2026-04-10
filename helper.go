@@ -82,9 +82,9 @@ func checkSliceField(pt []keyVal, fv reflect.Value, nameSpace, key string, el d.
 			fvV := reflect.ValueOf(fv.Interface())
 			fvVKind := fvV.Kind()
 			if fvVKind == reflect.Array || fvVKind == reflect.Slice {
-				el[nameSpace+key] = d.FieldError{Code: "required", Message: ErrMessage["required"], GivenVal: "*invalid type*"}
+				el[nameSpace+"."+key] = d.FieldError{Code: "required", Message: ErrMessage["required"], GivenVal: "*invalid type*"}
 			} else {
-				el[nameSpace+key] = d.FieldError{Code: "required", Message: ErrMessage["required"], GivenVal: fv.Interface().(string)}
+				el[nameSpace+"."+key] = d.FieldError{Code: "required", Message: ErrMessage["required"], GivenVal: fv.Interface().(string)}
 			}
 		}
 		return
@@ -112,7 +112,7 @@ func checkSliceField(pt []keyVal, fv reflect.Value, nameSpace, key string, el d.
 			}
 
 			// validate
-			err := Validate(fv.Index(ix).Interface(), key+"["+strconv.Itoa(ix)+"]")
+			err := Validate(fv.Index(ix).Interface(), nameSpace+"."+key+"["+strconv.Itoa(ix)+"]")
 			if err != nil {
 				el.Import(err.(d.FieldErrors))
 			}

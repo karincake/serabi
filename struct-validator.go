@@ -185,7 +185,7 @@ func Validate(input any, nameSpaces ...string) error {
 
 			// if current field is struct, validate again
 			typeString := fieldT.Type.String()
-			if fieldT.Type.Kind() == reflect.Struct && typeString != "time.Time" {
+			if fieldV.Kind() == reflect.Struct && typeString != "time.Time" {
 				var err error
 				if fieldT.Anonymous {
 					err = Validate(fieldV.Interface(), nameSpace)
@@ -204,7 +204,7 @@ func Validate(input any, nameSpaces ...string) error {
 				parsedTag := parseTag(tag)
 				// based on slice or not
 				if fieldV.Kind() == reflect.Slice {
-					checkSliceField(parsedTag, fieldV, nameSpace, nameSpace+key, errList) // &inputV,
+					checkSliceField(parsedTag, fieldV, nameSpace, key, errList) // &inputV,
 				} else {
 					// non slice
 					checkParsedTag(&inputV, parsedTag, fieldV, errList, nameSpaceDot+key, key, eNameSpace)
